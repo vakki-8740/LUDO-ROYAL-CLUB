@@ -74,6 +74,8 @@ function map_user($u) {
         'id'                 => (int)$u['id'],
         'username'           => $u['username'],
         'name'               => $u['name'],
+        'email'              => $u['email'] ?? '',
+        'googleUid'          => $u['google_uid'] ?? '',
         'userId'             => $u['user_id'],
         'profileLogo'        => $u['profile_logo'],
         'balance'            => (float)$u['balance'],

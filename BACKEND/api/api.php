@@ -10,26 +10,64 @@ $in = body();
 
 switch ($action) {
 
-    // ---------- AUTH ----------
+    // ---------- AUTH (Google-only) ----------
     case 'login': {
-        require_fields($in, ['username']);
-        $username = strtolower(trim($in['username']));
-        $username = preg_replace('/\s+/', '_', $username);
-        $displayName = trim($in['name'] ?? $in['username']);
+        // Google login: frontend Firebase Google popup ke baad google_uid + email + name bhejta hai.
+        // Purane username-only accounts ke liye username fallback abhi bhi supported hai.
+        $googleUid = trim($in['google_uid'] ?? '');
+        $email = strtolower(trim($in['email'] ?? ''));
+        $displayName = trim($in['name'] ?? $in['username'] ?? 'Player');
+        $logo = $in['profileLogo'] ?? ($in['photoURL'] ?? '');
 
-        $st = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $st->execute([$username]);
-        $row = $st->fetch();
+        $row = false;
+        if ($googleUid !== '') {
+            $st = $pdo->prepare("SELECT * FROM users WHERE google_uid = ? LIMIT 1");
+            $st->execute([$googleUid]);
+            $row = $st->fetch();
+        }
+        if (!$row && $email !== '') {
+            $st = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
+            $st->execute([$email]);
+            $row = $st->fetch();
+        }
+        if (!$row && isset($in['username']) && $in['username'] !== '') {
+            $username = strtolower(trim($in['username']));
+            $username = preg_replace('/\s+/', '_', $username);
+            $st = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
+            $st->execute([$username]);
+            $row = $st->fetch();
+        }
 
-        if (!$row) {
-            // New user — auto register
+        if ($row) {
+            // Existing user — Google details link/update karo (pehli Google login par)
+            $st = $pdo->prepare("UPDATE users SET google_uid = COALESCE(NULLIF(google_uid,''), ?), email = COALESCE(NULLIF(email,''), ?), name = ?, profile_logo = CASE WHEN profile_logo = '' THEN ? ELSE profile_logo END WHERE id = ?");
+            $st->execute([$googleUid !== '' ? $googleUid : null, $email !== '' ? $email : null, $displayName !== '' ? $displayName : $row['name'], $logo, (int)$row['id']]);
+            json_out(['success' => true, 'user' => map_user(get_user_row($pdo, $row['id'])), 'isNew' => false]);
+        }
+
+        if ($googleUid === '' && $email === '') {
+            json_out(['success' => false, 'error' => 'Google login required'], 400);
+        }
+        {
+            // New user — auto register (Google se)
+            $base = $email !== '' ? strstr($email, '@', true) : strtolower($displayName);
+            $username = preg_replace('/[^a-z0-9]+/', '_', strtolower(trim((string)$base)));
+            if ($username === '') $username = 'player';
+            // username unique banao
+            $try = $username; $n = 0;
+            while (true) {
+                $st = $pdo->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+                $st->execute([$try]);
+                if (!$st->fetch()) { $username = $try; break; }
+                $n++; $try = $username . '_' . $n;
+                if ($n > 50) { $username = 'player_' . time(); break; }
+            }
             $pdo->beginTransaction();
             try {
                 $userId = unique_rand_id($pdo, 'user_id');
                 $refCode = unique_rand_id($pdo, 'referral_code');
-                $logo = $in['profileLogo'] ?? '';
-                $st = $pdo->prepare("INSERT INTO users (username, name, user_id, profile_logo, referral_code) VALUES (?,?,?,?,?)");
-                $st->execute([$username, $displayName, $userId, $logo, $refCode]);
+                $st = $pdo->prepare("INSERT INTO users (username, name, email, google_uid, user_id, profile_logo, referral_code) VALUES (?,?,?,?,?,?,?)");
+                $st->execute([$username, $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $googleUid !== '' ? $googleUid : null, $userId, $logo, $refCode]);
                 $newId = (int)$pdo->lastInsertId();
 
                 // Welcome mail
@@ -48,7 +86,6 @@ switch ($action) {
                 json_out(['success' => false, 'error' => 'Register failed: ' . $e->getMessage()], 500);
             }
         }
-        json_out(['success' => true, 'user' => map_user($row), 'isNew' => false]);
     }
 
     case 'getUser': {

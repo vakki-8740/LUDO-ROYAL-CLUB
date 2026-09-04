@@ -35,13 +35,11 @@
                 <p>Play & Win Real Money</p>
             </div>
             <div class="login-form">
-                <div class="login-field">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="login-username" placeholder="Enter your name">
-                </div>
-                <button class="login-btn play-btn" onclick="loginWithUsername()">
-                    <i class="fas fa-play"></i> Play Now
+                <!-- Google-only login -->
+                <button class="login-btn google-btn" id="google-login-btn" onclick="loginWithGoogle()">
+                    <i class="fab fa-google"></i> Login with Google
                 </button>
+                <p style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:4px;">Secure login — sirf Google se</p>
             </div>
         </div>
     </div>
@@ -448,7 +446,12 @@
 
     <!-- Page content (Privacy, Terms, GST, About, Rules) — local texts from PREVECY-TXTS.txt -->
     <script src="pages-content.js"></script>
-    <!-- Firebase removed — backend ab PHP + MySQL (XAMPP) hai -->
+    <!-- Google login: Firebase Auth (compat) + env config -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="env.js"></script>
+    <script src="firebase-config.js"></script>
+    <!-- Backend: PHP + MySQL (XAMPP / PHP host) -->
     <script src="app.js"></script>
 </body>
 </html>

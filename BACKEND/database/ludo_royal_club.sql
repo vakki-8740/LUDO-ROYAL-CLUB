@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NULL DEFAULT NULL,
+    google_uid VARCHAR(128) NULL DEFAULT NULL,
     user_id VARCHAR(10) NOT NULL UNIQUE,
     profile_logo VARCHAR(255) DEFAULT '',
     balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -33,7 +35,9 @@ CREATE TABLE IF NOT EXISTS users (
     referral_commission DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     kyc_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
     demo_trx TINYINT(1) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_google_uid (google_uid),
+    UNIQUE KEY uq_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==================== BETS ====================
@@ -128,3 +132,10 @@ INSERT INTO bets (creator_id, creator_name, creator_user_id, creator_logo, amoun
 (NULL, 'Kunal',   '98103', 'USERS-LOGO/photo_2026-09-02_16-25-41.jpg', 750,  'LUDO9I', 'playing',   'Ravi',   'USERS-LOGO/photo_2026-09-02_16-26-05.jpg'),
 (NULL, 'Ananya',  '42659', 'USERS-LOGO/photo_2026-09-02_16-26-06.jpg', 400,  'LUDO8H', 'completed', 'Sanjay', 'USERS-LOGO/photo_2026-09-02_16-26-07.jpg'),
 (NULL, 'Pooja',   '73018', 'USERS-LOGO/photo_2026-09-02_16-26-23.jpg', 100,  'LUDO10J','completed', 'Nikhil', 'USERS-LOGO/photo_2026-09-02_16-26-24.jpg');
+
+-- =====================================================
+-- MIGRATION (agar DB pehle se bana hai to ye 3 lines phpMyAdmin me chalao)
+-- =====================================================
+-- ALTER TABLE users ADD COLUMN email VARCHAR(255) NULL DEFAULT NULL AFTER name;
+-- ALTER TABLE users ADD COLUMN google_uid VARCHAR(128) NULL DEFAULT NULL AFTER email;
+-- ALTER TABLE users ADD UNIQUE KEY uq_google_uid (google_uid), ADD UNIQUE KEY uq_email (email);

@@ -74,27 +74,57 @@ async function apiCall(action, data = {}) {
     return json;
 }
 
-// ==================== AUTH ====================
-async function loginWithUsername() {
-    const username = document.getElementById('login-username').value.trim();
-    if (!username) {
-        showToast('Please enter your name', '#ff3b30');
+// ==================== AUTH (Google-only) ====================
+// Flow: Firebase Google popup -> Google profile -> PHP backend login/auto-register.
+async function loginWithGoogle() {
+    if (!window.firebase || !firebase.auth) {
+        showToast('Google login load nahi hua. Internet check karo.', '#ff3b30');
+        return;
+    }
+    if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
+        showToast('Firebase config missing! env.js check karo.', '#ff3b30');
         return;
     }
     showLoading();
     try {
-        // Login + auto-register in one API call (new users are created automatically)
-        const res = await apiCall('login', { username: username, name: username, profileLogo: getRandomLogo() });
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const cred = await firebase.auth().signInWithPopup(provider);
+        const g = cred.user || {};
+        const res = await apiCall('login', {
+            google_uid: g.uid || '',
+            email: g.email || '',
+            name: g.displayName || 'Player',
+            profileLogo: g.photoURL || getRandomLogo()
+        });
         currentUser = res.user;
         afterLogin();
+        showToast('Google se login ho gaya!', '#34c759');
     } catch (err) {
         hideLoading();
-        showToast('Login failed: ' + err.message, '#ff3b30');
+        const msg = (err && err.message) || 'Login failed';
+        if (msg.includes('popup-closed')) showToast('Popup band ho gaya. Dobara try karo.', '#ff3b30');
+        else if (msg.includes('auth/')) showToast('Google error: ' + msg, '#ff3b30');
+        else showToast('Login failed: ' + msg, '#ff3b30');
     }
 }
 
-// REMOVED: loginWithGoogle() / checkUserExists() / sendWelcomeMail() — Firebase Auth is
-// gone. The PHP backend (api.php -> 'login') now handles registration + welcome mail.
+// Page reload par: agar Google session hai to backend se auto-login.
+if (window.firebase && firebase.auth) {
+    firebase.auth().onAuthStateChanged(async (g) => {
+        if (g && !currentUser && document.getElementById('login-page').style.display !== 'none') {
+            try {
+                const res = await apiCall('login', {
+                    google_uid: g.uid || '',
+                    email: g.email || '',
+                    name: g.displayName || 'Player',
+                    profileLogo: g.photoURL || getRandomLogo()
+                });
+                currentUser = res.user;
+                afterLogin();
+            } catch (e) { /* login page par hi raho */ }
+        }
+    });
+}
 
 function afterLogin() {
     hideLoading();
@@ -107,6 +137,7 @@ function afterLogin() {
 function logoutUser() {
     currentUser = null;
     stopBetsPolling();
+    try { if (window.firebase && firebase.auth) firebase.auth().signOut(); } catch (e) {}
     document.getElementById('login-page').style.display = 'flex';
     document.getElementById('home-page').style.display = 'none';
 }
@@ -718,8 +749,8 @@ async function loadSupport() {
 }
 
 // ==================== INIT ====================
-// REMOVED: firebase.auth().onAuthStateChanged — login/register is handled by the PHP API.
-// (Session persistence not added yet: the user logs in with their username each visit.)
+// Google session restore AUTH section me (onAuthStateChanged) hota hai.
+// Yahan sirf support/mails observer rehta hai.
 
 // Load support / mails when their sections are shown
 const supportObserver = new MutationObserver(() => {
