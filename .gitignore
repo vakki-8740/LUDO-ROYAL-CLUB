@@ -1,0 +1,15 @@
+# Node / dependencies
+node_modules/
+npm-debug.log*
+yarn.lock
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local env config (may contain credentials — not needed: app uses PHP backend now)
+/FRONTEND/user/env.js
