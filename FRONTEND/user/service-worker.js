@@ -1,5 +1,5 @@
-const CACHE = 'ludo-royal-club-v1'; // Ludo Royal Club (new cache name forces all clients to refresh)
-const URLS = ['index.html', 'app.js', 'pages-content.js', 'style.css', 'firebase-config.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png'];
+const CACHE = 'ludo-royal-club-v2'; // logo update — naya cache naam purane clients ko refresh karega
+const URLS = ['index.html', 'app.js', 'pages-content.js', 'style.css', 'firebase-config.js', 'manifest.json', 'PROJECT-KOGO/ludo-royal-club-logo.png', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
