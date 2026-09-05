@@ -12,9 +12,8 @@ window.FirebaseReady = (function () {
     }
     if (firebase.apps && firebase.apps.length) return Promise.resolve(true);
 
-    // user/ aur admin/ dono FRONTEND ke andar same depth par hain,
-    // isliye ye relative URL dono jagah kaam karta hai.
-    var API = '../../BACKEND/api/api.php?action=getFirebaseConfig';
+    // Backend fixed URL (Vercel se relative path nahi chalta)
+    var API = 'https://ludoroyalclub.free.nf/api/api.php?action=getFirebaseConfig';
 
     // Fallback: agar backend down ho to bhi login na ruke (same values as backend file)
     var FALLBACK = {

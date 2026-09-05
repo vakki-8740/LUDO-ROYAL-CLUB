@@ -56,9 +56,9 @@ function generateRoomCode() {
 }
 
 // ==================== PHP API ====================
-// Firebase removed — backend ab PHP + MySQL (XAMPP) hai.
-// XAMPP me project htdocs me aise rakho:  htdocs/ludo-royal-club/FRONTEND/user/  +  htdocs/ludo-royal-club/BACKEND/api/
-const API_URL = '../../BACKEND/api/api.php';
+// Backend: https://ludoroyalclub.free.nf (PHP host).
+// Vercel (frontend) se relative path nahi chalta, isliye absolute URL.
+const API_URL = 'https://ludoroyalclub.free.nf/api/api.php';
 let betsTimer = null;
 
 async function apiCall(action, data = {}) {
