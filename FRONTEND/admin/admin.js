@@ -11,7 +11,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // TODO: yahan apna Gmail likho (rules file me bhi same email hona chahiye)
-const ADMIN_EMAILS = ['lightsir8740@gmail.com'];
+const ADMIN_EMAILS = ['vakkiadmin@gmail.com'];
 const ADMIN_USERNAME = 'vakki8740';
 
 let allUsers = [], allTrx = [], allBets = [], allGames = [];
