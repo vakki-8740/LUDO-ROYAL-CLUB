@@ -105,6 +105,7 @@ async function loginWithGoogle() {
         hideLoading();
         const msg = (err && err.message) || 'Login failed';
         if (msg.includes('popup-closed')) showToast('Popup band ho gaya. Dobara try karo.', '#ff3b30');
+        else if (msg.includes('operation-not-allowed')) showToast('Google login Firebase me OFF hai. Console me enable karo.', '#ff3b30');
         else if (msg.includes('auth/')) showToast('Google error: ' + msg, '#ff3b30');
         else showToast('Login failed: ' + msg, '#ff3b30');
     }
