@@ -8,12 +8,23 @@ $DB_NAME = 'ludo_royal_club';
 $DB_USER = 'root';      // XAMPP default
 $DB_PASS = '';          // XAMPP default (empty)
 
-// ---- JSON headers + CORS (PWA/testing friendly) ----
+// ---- JSON headers + CORS ----
+// InfinityFree bot-check cookie (?i=1) cross-origin fetch me bhejne ke liye
+// credentials chahiye — aur credentials ke saath '*' origin nahi chalta,
+// isliye Vercel frontend ko naam se allow kiya hai.
+$FRONTEND_URL = 'https://ludoroyalclub.vercel.app';
+$reqOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+if ($reqOrigin === $FRONTEND_URL) {
+    header('Access-Control-Allow-Origin: ' . $FRONTEND_URL);
+    header('Access-Control-Allow-Credentials: true');
+    header('Vary: Origin');
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
 header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { http_response_code(204); exit; }
 
 // ---- PDO connection ----
 try {

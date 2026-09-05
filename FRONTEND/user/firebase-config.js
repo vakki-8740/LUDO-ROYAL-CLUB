@@ -45,7 +45,7 @@ window.FirebaseReady = (function () {
         }
     }
 
-    return fetch(API)
+    return fetch(API, { credentials: 'include' })
         .then(function (r) { return r.json(); })
         .then(function (j) {
             if (j && j.success && j.config) return initWith(j.config);

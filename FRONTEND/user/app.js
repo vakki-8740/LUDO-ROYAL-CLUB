@@ -64,6 +64,7 @@ let betsTimer = null;
 async function apiCall(action, data = {}) {
     const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`, {
         method: 'POST',
+        credentials: 'include', // InfinityFree bot-check cookie bhejo (warna HTML aata hai, JSON nahi)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
