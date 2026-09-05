@@ -1,9 +1,19 @@
 // LUDO ROYAL CLUB — Firebase Auth (Google login only)
-// env.js se config aata hai. Firestore ki zaroorat nahi — sirf Auth use hota hai.
+// Config: pehle env.js (window.FIREBASE_CONFIG) se, nahi mila to built-in default.
+// (env.js git me push nahi hota, isliye Vercel par fallback kaam aata hai.)
 (function () {
-    const config = window.FIREBASE_CONFIG || {};
+    var DEFAULT_CONFIG = {
+        apiKey: "AIzaSyCiuhqX-mjBB6eRjljirzIyuJv0wKVRj58",
+        authDomain: "ludojoy-ca35c.firebaseapp.com",
+        databaseURL: "https://ludojoy-ca35c-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "ludojoy-ca35c",
+        storageBucket: "ludojoy-ca35c.firebasestorage.app",
+        messagingSenderId: "591882703572",
+        appId: "1:591882703572:web:862fa9a649e4723c3b6141"
+    };
+    var config = window.FIREBASE_CONFIG || DEFAULT_CONFIG;
     if (!config.apiKey || !config.projectId) {
-        console.error('Firebase config missing! FRONTEND/user/env.js check karo');
+        console.error('Firebase config missing!');
         return;
     }
     try {
