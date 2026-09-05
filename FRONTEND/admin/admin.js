@@ -1,6 +1,9 @@
 // =====================================================
 // LUDO ROYAL CLUB — Admin Panel (100% Firebase, HTML)
-// Backend = Firestore. Login = sirf admin Google account.
+// Login = username + password. Password Firebase Auth me secure rehta hai
+// (code me nahi — GitHub public hai). Username sirf vakkiadmin chalega.
+// CONSOLE SETUP (ek baar): Authentication > Sign-in method > Email/Password ON,
+// phir Users > Add user > email = ADMIN_EMAILS wala, password = vakki8740.
 // TODO: ADMIN_EMAILS me apna Gmail dalo + firestore.rules me wahi email.
 // =====================================================
 if ('serviceWorker' in navigator) {
@@ -9,6 +12,7 @@ if ('serviceWorker' in navigator) {
 
 // TODO: yahan apna Gmail likho (rules file me bhi same email hona chahiye)
 const ADMIN_EMAILS = ['admin@example.com'];
+const ADMIN_USERNAME = 'vakkiadmin';
 
 let allUsers = [], allTrx = [], allBets = [], allGames = [];
 let unsubs = [];
@@ -54,24 +58,28 @@ function isAdminEmail(email) {
     return ADMIN_EMAILS.map(e => e.toLowerCase()).includes((email || '').toLowerCase());
 }
 
-// ==================== LOGIN (Google, admin-only) ====================
+// ==================== LOGIN (username + password) ====================
 async function handleLogin(btn) {
     loading(btn, true);
     try {
         if (!window.FirebaseReady) throw new Error('Firebase taiyaar nahi. Refresh karo.');
         const ok = await window.FirebaseReady;
         if (!ok) throw new Error('Firebase taiyaar nahi. Refresh karo.');
-        const cred = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const username = document.getElementById('admin-username').value.trim();
+        const pass = document.getElementById('admin-pass').value;
+        if (username !== ADMIN_USERNAME) throw new Error('Galat username');
+        if (!pass) throw new Error('Password dalo');
+        // Password Firebase Auth se match hota hai (console me bana admin user)
+        const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAILS[0], pass);
         const email = cred.user.email || '';
         if (!isAdminEmail(email)) {
             await firebase.auth().signOut();
-            showToast('Ye Google account admin nahi hai: ' + email, 'var(--danger)');
-        } else {
-            enterAdmin();
+            throw new Error('Ye account admin nahi hai');
         }
+        enterAdmin();
     } catch (e) {
-        const msg = (e && e.message) || 'Login failed';
-        showToast(msg.includes('popup-closed') ? 'Popup band ho gaya. Dobara try karo.' : 'Login failed: ' + msg, 'var(--danger)');
+        const msg = (e && e.code === 'auth/invalid-credential') ? 'Galat username ya password' : (e && e.message) || 'Login failed';
+        showToast(msg.includes('Firebase taiyaar') || msg.includes('Galat') ? msg : 'Login failed: ' + msg, 'var(--danger)');
     }
     loading(btn, false);
 }
