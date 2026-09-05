@@ -1,57 +1,79 @@
+// =====================================================
+// LUDO ROYAL CLUB — Firestore Rules (100% Firebase, koi backend nahi)
+// ADMIN EMAIL: neeche apna Gmail dalo + admin.js me ADMIN_EMAILS me wahi dalo.
+// Admin Google se login karta hai; likhne ke rights sirf us email ko.
+// =====================================================
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Har login user apna profile padh sakta hai, bana sakta hai, naam/logo update kar sakta hai.
-    // Balance/commission sirf Admin SDK (ya console) se badlo — client se nahi.
+    // TODO: 'admin@example.com' ki jagah apna Gmail likho (admin.js me bhi same)
+    function adminEmail() { return 'admin@example.com'; }
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == adminEmail();
+    }
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // ---------- USERS ----------
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['name', 'profileLogo', 'photoURL']);
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      // User: sirf ye fields (deposit/withdraw/bets balance yahin se update hota hai).
+      // NOTE: backend nahi hai isliye client-side counters; gadbad dikhe to admin console se thik karo.
+      allow update: if isAdmin() || (isOwner(uid) && request.resource.data.diff(resource.data)
+        .affectedKeys().hasOnly(['name', 'profileLogo', 'photoURL', 'balance', 'totalDeposit', 'totalWithdraw', 'totalWin']));
+
       match /mails/{mailId} {
-        allow read, update: if request.auth != null && request.auth.uid == uid;
+        allow read, update: if isOwner(uid) || isAdmin();
+        allow create: if isAdmin();
       }
     }
 
-    // Bets: lobby sabko dikhta hai. Create apne naam se, join transaction se.
-    // Status/result sirf admin badlega.
+    // ---------- BETS (lobby realtime) ----------
     match /bets/{betId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.creatorId == request.auth.uid
         && request.resource.data.status == 'waiting';
-      allow update: if request.auth != null
+      // Join: waiting -> playing, joiner khud. Result/cancel: sirf admin.
+      allow update: if isAdmin() || (request.auth != null
         && resource.data.status == 'waiting'
         && request.resource.data.status == 'playing'
-        && request.resource.data.joinerId == request.auth.uid;
+        && request.resource.data.joinerId == request.auth.uid);
+      allow delete: if isAdmin();
     }
 
-    // Transactions: user sirf apni dekh sakta hai + withdraw request bana sakta hai.
-    // Approve/reject/status sirf admin (console ya Admin SDK).
+    // ---------- TRANSACTIONS ----------
     match /transactions/{trxId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      // User: Deposit (turant Success) ya Withdraw request (Pending) bana sakta hai
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type == 'Withdraw'
-        && request.resource.data.status == 'Pending';
+        && ((request.resource.data.type == 'Deposit' && request.resource.data.status == 'Success')
+         || (request.resource.data.type == 'Withdraw' && request.resource.data.status == 'Pending'));
+      // Approve / Reject / status change: sirf admin
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // KYC: user apni request bana/dekh sakta hai, approve sirf admin.
+    // ---------- KYC ----------
     match /kyc_requests/{reqId} {
       allow read, create: if request.auth != null;
-      allow update: if false;
+      allow update: if isAdmin();
     }
 
-    // Games / settings: sab login users padh sakte hain, likhega sirf admin.
+    // ---------- GAMES ----------
     match /games/{gameId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if isAdmin();
     }
+
+    // ---------- SETTINGS (app / support / welcome / referral) ----------
     match /settings/{docId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
     }
   }
 }

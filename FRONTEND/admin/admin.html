@@ -16,16 +16,13 @@
 
     <div id="toast">Message</div>
 
-    <!-- Login -->
+    <!-- Login: sirf admin Google account (password system hataya — View Source me dikhta tha) -->
     <div id="login-section">
         <div class="login-box">
             <h2><i class="fas fa-dice" style="color:#ff3b30;"></i> Ludo Royal Club Admin</h2>
-            <!-- FIX: removed hardcoded admin email/password values (they were visible to
-                 anyone who opened View Source). Enter credentials manually now. -->
-            <input type="email" id="admin-email" placeholder="Admin Email" autocomplete="username">
-            <input type="password" id="admin-pass" placeholder="Password" autocomplete="current-password">
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Sirf admin Google account se login</p>
             <button class="btn" onclick="handleLogin(this)">
-                <span class="btn-text">Login Securely</span><div class="spinner"></div>
+                <span class="btn-text"><i class="fab fa-google"></i> Login with Google</span><div class="spinner"></div>
             </button>
         </div>
     </div>
@@ -203,7 +200,8 @@
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Deposit Options</label>
                         <input type="text" id="s-deposit-opts" placeholder="Comma separated: 100,200,300,400,500,1000,2000,5000" value="100,200,300,400,500,1000,2000,5000">
                         <input type="number" id="s-min-deposit" placeholder="Minimum Deposit" value="100">
-                        <input type="number" id="s-min-withdraw" placeholder="Minimum Withdraw" value="100">
+                        <input type="number" id="s-min-withdraw" placeholder="Minimum Withdraw" value="195">
+                        <input type="number" id="s-max-withdraw" placeholder="Maximum Withdraw" value="50000">
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; margin-top:15px; display:block;">Privacy Policy, Terms & About</label>
                         <textarea id="s-privacy" placeholder="Privacy Policy Text" rows="4"></textarea>
                         <textarea id="s-terms" placeholder="Terms & Conditions Text" rows="4"></textarea>

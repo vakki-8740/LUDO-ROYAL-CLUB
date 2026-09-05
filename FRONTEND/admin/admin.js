@@ -1,8 +1,17 @@
+// =====================================================
+// LUDO ROYAL CLUB — Admin Panel (100% Firebase, HTML)
+// Backend = Firestore. Login = sirf admin Google account.
+// TODO: ADMIN_EMAILS me apna Gmail dalo + firestore.rules me wahi email.
+// =====================================================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
 }
 
-let allUsers = [], allTrx = [], allBets = [], allGames = [], allReferrals = [];
+// TODO: yahan apna Gmail likho (rules file me bhi same email hona chahiye)
+const ADMIN_EMAILS = ['admin@example.com'];
+
+let allUsers = [], allTrx = [], allBets = [], allGames = [];
+let unsubs = [];
 
 function showToast(msg, bg) {
     const t = document.getElementById('toast');
@@ -41,91 +50,111 @@ function switchUdTab(tab, el) {
     else if (tab === 'referral') showUserReferral(uid);
 }
 
-// ==================== LOGIN ====================
+function isAdminEmail(email) {
+    return ADMIN_EMAILS.map(e => e.toLowerCase()).includes((email || '').toLowerCase());
+}
+
+// ==================== LOGIN (Google, admin-only) ====================
 async function handleLogin(btn) {
     loading(btn, true);
-    const email = document.getElementById('admin-email').value.trim();
-    const pass = document.getElementById('admin-pass').value.trim();
-    if (email === 'vakki@admin.com' && pass === 'vakkiboss861402') {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('admin-layout').style.display = 'flex';
-        loadAllData();
-    } else {
-        try {
-            await firebase.auth().signInWithEmailAndPassword(email, pass);
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('admin-layout').style.display = 'flex';
-            loadAllData();
-        } catch (e) {
-            showToast('Login failed: ' + e.message, 'var(--danger)');
+    try {
+        if (!window.FirebaseReady) throw new Error('Firebase taiyaar nahi. Refresh karo.');
+        const ok = await window.FirebaseReady;
+        if (!ok) throw new Error('Firebase taiyaar nahi. Refresh karo.');
+        const cred = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const email = cred.user.email || '';
+        if (!isAdminEmail(email)) {
+            await firebase.auth().signOut();
+            showToast('Ye Google account admin nahi hai: ' + email, 'var(--danger)');
+        } else {
+            enterAdmin();
         }
+    } catch (e) {
+        const msg = (e && e.message) || 'Login failed';
+        showToast(msg.includes('popup-closed') ? 'Popup band ho gaya. Dobara try karo.' : 'Login failed: ' + msg, 'var(--danger)');
     }
     loading(btn, false);
 }
 
+function enterAdmin() {
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('admin-layout').style.display = 'flex';
+    loadAllData();
+}
+
+// Reload par admin session wapas
+if (window.FirebaseReady) {
+    window.FirebaseReady.then(ok => {
+        if (!ok) return;
+        firebase.auth().onAuthStateChanged(g => {
+            if (g && isAdminEmail(g.email)) enterAdmin();
+        });
+    });
+}
+
 function logout() {
+    unsubs.forEach(u => { try { u(); } catch (e) {} });
+    unsubs = [];
     firebase.auth().signOut().catch(() => {});
     document.getElementById('login-section').style.display = 'flex';
     document.getElementById('admin-layout').style.display = 'none';
 }
 
-// ==================== LOAD DATA ====================
+// ==================== LOAD DATA (realtime) ====================
 function loadAllData() {
     loadUsers();
     loadTransactions();
     loadBets();
     loadGames();
-    loadReferrals();
     loadSettings();
     loadKYC();
+    loadReferralStats();
 }
+
+function track(unsub) { unsubs.push(unsub); return unsub; }
 
 // ==================== USERS ====================
 function loadUsers() {
-    db.collection('users').onSnapshot(snap => {
+    track(db.collection('users').onSnapshot(snap => {
         allUsers = [];
-        snap.forEach(doc => allUsers.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(d => allUsers.push({ id: d.id, ...d.data() }));
         renderUsers();
+        renderReferrals();
         updateStats();
-    });
+    }));
+}
+
+function userRow(u) {
+    return `
+        <tr>
+            <td><strong>${u.name || 'Unknown'}</strong><br><small style="color:var(--text-muted);">${u.email || ''}</small></td>
+            <td>${u.userId || u.id}</td>
+            <td>₹${u.balance || 0}</td>
+            <td><span style="color:${u.status === 'blocked' ? 'var(--danger)' : 'var(--success)'}">${u.status === 'blocked' ? 'Blocked' : 'Active'}</span></td>
+            <td class="action-btns">
+                <button class="btn" style="padding:6px 12px;font-size:12px;" onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-warning" style="padding:6px 12px;font-size:12px;" onclick="openBalanceModal('${u.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn ${u.status === 'blocked' ? 'btn-success' : 'btn-danger'}" style="padding:6px 12px;font-size:12px;" onclick="toggleUserStatus('${u.id}')">${u.status === 'blocked' ? 'Unblock' : 'Block'}</button>
+            </td>
+        </tr>`;
 }
 
 function renderUsers() {
     const list = document.getElementById('user-list');
-    if (!allUsers.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users found</td></tr>'; return; }
-    list.innerHTML = allUsers.map(u => `
-        <tr>
-            <td><strong>${u.name || 'Unknown'}</strong></td>
-            <td>${u.userId || u.id}</td>
-            <td>₹${u.balance || 0}</td>
-            <td><span style="color:${u.status === 'blocked' ? 'var(--danger)' : 'var(--success)'}">${u.status || 'Active'}</span></td>
-            <td class="action-btns">
-                <button class="btn" style="padding:6px 12px;font-size:12px;" onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
-                <button class="btn btn-warning" style="padding:6px 12px;font-size:12px;" onclick="openBalanceModal('${u.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn ${u.status === 'blocked' ? 'btn-success' : 'btn-danger'}" style="padding:6px 12px;font-size:12px;" onclick="toggleUserStatus('${u.id}')">${u.status === 'blocked' ? 'Unblock' : 'Block'}</button>
-            </td>
-        </tr>
-    `).join('');
+    list.innerHTML = allUsers.length
+        ? allUsers.map(userRow).join('')
+        : '<tr><td colspan="5" style="text-align:center;">No users found</td></tr>';
 }
 
 function filterUsers() {
     const q = document.getElementById('search-users').value.toLowerCase();
-    const filtered = allUsers.filter(u => (u.name || '').toLowerCase().includes(q) || (u.userId || u.id).includes(q));
-    const list = document.getElementById('user-list');
-    if (!filtered.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No matching users</td></tr>'; return; }
-    list.innerHTML = filtered.map(u => `
-        <tr>
-            <td><strong>${u.name || 'Unknown'}</strong></td>
-            <td>${u.userId || u.id}</td>
-            <td>₹${u.balance || 0}</td>
-            <td><span style="color:${u.status === 'blocked' ? 'var(--danger)' : 'var(--success)'}">${u.status || 'Active'}</span></td>
-            <td class="action-btns">
-                <button class="btn" style="padding:6px 12px;font-size:12px;" onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
-                <button class="btn btn-warning" style="padding:6px 12px;font-size:12px;" onclick="openBalanceModal('${u.id}')"><i class="fas fa-edit"></i></button>
-                <button class="btn ${u.status === 'blocked' ? 'btn-success' : 'btn-danger'}" style="padding:6px 12px;font-size:12px;" onclick="toggleUserStatus('${u.id}')">${u.status === 'blocked' ? 'Unblock' : 'Block'}</button>
-            </td>
-        </tr>
-    `).join('');
+    const filtered = allUsers.filter(u =>
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        String(u.userId || u.id).toLowerCase().includes(q));
+    document.getElementById('user-list').innerHTML = filtered.length
+        ? filtered.map(userRow).join('')
+        : '<tr><td colspan="5" style="text-align:center;">No matching users</td></tr>';
 }
 
 async function toggleUserStatus(uid) {
@@ -148,50 +177,53 @@ function showUserProfile(uid) {
     document.getElementById('ud-avatar').textContent = (user.name || '?')[0].toUpperCase();
     document.getElementById('ud-user-name').textContent = user.name || 'Unknown';
     document.getElementById('ud-user-id').textContent = 'ID: ' + (user.userId || uid);
-    document.getElementById('ud-status-badge').textContent = user.status === 'blocked' ? 'Blocked' : 'Active';
-    document.getElementById('ud-status-badge').style.color = user.status === 'blocked' ? 'var(--danger)' : 'var(--success)';
+    const badge = document.getElementById('ud-status-badge');
+    badge.textContent = user.status === 'blocked' ? 'Blocked' : 'Active';
+    badge.style.color = user.status === 'blocked' ? 'var(--danger)' : 'var(--success)';
     document.getElementById('ud-body').innerHTML = `
         <div style="margin-bottom:15px;"><strong>Email:</strong> ${user.email || 'N/A'}</div>
-        <div style="margin-bottom:15px;"><strong>Joined:</strong> ${user.createdAt ? new Date(user.createdAt.toDate()).toLocaleDateString() : 'N/A'}</div>
+        <div style="margin-bottom:15px;"><strong>KYC:</strong> ${user.kycStatus || 'none'}</div>
         <div style="margin-bottom:15px;"><strong>Total Deposit:</strong> ₹${user.totalDeposit || 0}</div>
         <div style="margin-bottom:15px;"><strong>Total Withdraw:</strong> ₹${user.totalWithdraw || 0}</div>
         <div style="margin-bottom:15px;"><strong>Total Win:</strong> ₹${user.totalWin || 0}</div>
     `;
 }
 
+// FIX: purana code kabhi-na-bana field padhta tha (hamesha "No deposits").
+// Ab asli transactions collection se aata hai.
 function showUserWallet(uid) {
     const user = allUsers.find(u => u.id === uid);
     if (!user) return;
-    // FIX: the old code read user.depositHistory — a field that is never written anywhere,
-    // so it always showed "No deposits". Now we fetch real transactions from Firestore.
     document.getElementById('ud-body').innerHTML = `
         <div style="margin-bottom:15px;"><strong>Current Balance:</strong> ₹${user.balance || 0}</div>
         <div style="margin-bottom:15px;"><strong>Transaction History:</strong></div>
         <div style="max-height:200px;overflow-y:auto;" id="ud-trx-history">Loading...</div>
     `;
-    db.collection('transactions').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
-        const items = [];
-        snap.forEach(d => items.push(d.data()));
-        const el = document.getElementById('ud-trx-history');
-        if (!items.length) { el.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No transactions</div>'; return; }
-        el.innerHTML = items.map(t => `
-            <div style="padding:8px;border-bottom:1px solid #f2f2f7;font-size:13px;">
-                ${t.type === 'Deposit' ? '+' : '-'}₹${t.amount || 0} · ${t.type || ''} - ${t.date || ''}
-                <span style="color:${t.status === 'Success' ? 'var(--success)' : t.status === 'Pending' ? 'var(--warning)' : 'var(--danger)'};float:right;">${t.status || ''}</span>
-            </div>
-        `).join('');
-    }).catch(() => {
-        const el = document.getElementById('ud-trx-history');
-        if (el) el.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">Could not load transactions</div>';
-    });
+    db.collection('transactions').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(10).get()
+        .then(snap => {
+            const items = [];
+            snap.forEach(d => items.push(d.data()));
+            const el = document.getElementById('ud-trx-history');
+            if (!items.length) { el.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No transactions</div>'; return; }
+            el.innerHTML = items.map(t => `
+                <div style="padding:8px;border-bottom:1px solid #f2f2f7;font-size:13px;">
+                    ${t.type === 'Deposit' ? '+' : '-'}₹${t.amount || 0} · ${t.type || ''} - ${t.date || ''}
+                    <span style="color:${t.status === 'Success' ? 'var(--success)' : t.status === 'Pending' ? 'var(--warning)' : 'var(--danger)'};float:right;">${t.status || ''}</span>
+                </div>`).join('');
+        })
+        .catch(() => {
+            const el = document.getElementById('ud-trx-history');
+            if (el) el.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">Could not load transactions</div>';
+        });
 }
 
 function showUserReferral(uid) {
     const user = allUsers.find(u => u.id === uid);
     if (!user) return;
-    const refUsers = allUsers.filter(u => u.referredBy === user.userId || u.referredBy === uid);
+    const code = user.referralCode || user.userId || uid;
+    const refUsers = allUsers.filter(u => u.referredBy === code);
     document.getElementById('ud-body').innerHTML = `
-        <div style="margin-bottom:15px;"><strong>Referral Code:</strong> ${user.referralCode || user.userId || uid}</div>
+        <div style="margin-bottom:15px;"><strong>Referral Code:</strong> ${code}</div>
         <div style="margin-bottom:15px;"><strong>Referred Users:</strong> ${refUsers.length}</div>
         <div style="margin-bottom:15px;"><strong>Total Commission:</strong> ₹${user.referralCommission || 0}</div>
         ${refUsers.length ? `<div style="max-height:200px;overflow-y:auto;">${refUsers.map(u => `<div style="padding:8px;border-bottom:1px solid #f2f2f7;font-size:13px;">${u.name || 'Unknown'} (${u.userId || u.id})</div>`).join('')}</div>` : ''}
@@ -220,23 +252,22 @@ async function saveBalance(btn) {
 
 // ==================== TRANSACTIONS ====================
 function loadTransactions() {
-    db.collection('transactions').orderBy('timestamp', 'desc').onSnapshot(snap => {
+    track(db.collection('transactions').orderBy('timestamp', 'desc').limit(200).onSnapshot(snap => {
         allTrx = [];
-        snap.forEach(doc => allTrx.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(d => allTrx.push({ id: d.id, ...d.data() }));
         renderTrx();
         updateStats();
-    });
+    }));
 }
 
-function renderTrx() {
-    const list = document.getElementById('trx-list');
-    if (!allTrx.length) { list.innerHTML = '<tr><td colspan="6" style="text-align:center;">No transactions</td></tr>'; return; }
-    list.innerHTML = allTrx.map(t => `
+function trxRow(t) {
+    const user = allUsers.find(u => u.id === t.userId);
+    return `
         <tr>
-            <td>${t.userName || t.userId || 'Unknown'}</td>
+            <td>${t.userName || (user && user.name) || 'Unknown'}<br><small style="color:var(--text-muted);">${user && user.userId ? user.userId : ''}</small></td>
             <td>${t.type || 'N/A'}</td>
             <td>₹${t.amount || 0}</td>
-            <td>${t.date || (t.timestamp ? new Date(t.timestamp.toDate()).toLocaleDateString() : 'N/A')}</td>
+            <td>${t.date || 'N/A'}</td>
             <td><span style="color:${t.status === 'Success' ? 'var(--success)' : t.status === 'Pending' ? 'var(--warning)' : 'var(--danger)'}">${t.status || 'Pending'}</span></td>
             <td class="action-btns">
                 ${t.status === 'Pending' ? `
@@ -244,8 +275,13 @@ function renderTrx() {
                     <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="rejectTrx('${t.id}')">Reject</button>
                 ` : '<span style="color:var(--text-muted);font-size:12px;">--</span>'}
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+}
+
+function renderTrx() {
+    document.getElementById('trx-list').innerHTML = allTrx.length
+        ? allTrx.map(trxRow).join('')
+        : '<tr><td colspan="6" style="text-align:center;">No transactions</td></tr>';
 }
 
 function filterTrx() {
@@ -253,28 +289,16 @@ function filterTrx() {
     const type = document.getElementById('filter-trx-type').value;
     const status = document.getElementById('filter-trx-status').value;
     const filtered = allTrx.filter(t => {
-        if (q && !(t.userName || '').toLowerCase().includes(q) && !(t.userId || '').includes(q)) return false;
+        const user = allUsers.find(u => u.id === t.userId);
+        const name = ((t.userName || '') + ' ' + ((user && user.name) || '')).toLowerCase();
+        if (q && !name.includes(q)) return false;
         if (type && t.type !== type) return false;
         if (status && t.status !== status) return false;
         return true;
     });
-    const list = document.getElementById('trx-list');
-    if (!filtered.length) { list.innerHTML = '<tr><td colspan="6" style="text-align:center;">No matching transactions</td></tr>'; return; }
-    list.innerHTML = filtered.map(t => `
-        <tr>
-            <td>${t.userName || t.userId || 'Unknown'}</td>
-            <td>${t.type || 'N/A'}</td>
-            <td>₹${t.amount || 0}</td>
-            <td>${t.date || (t.timestamp ? new Date(t.timestamp.toDate()).toLocaleDateString() : 'N/A')}</td>
-            <td><span style="color:${t.status === 'Success' ? 'var(--success)' : t.status === 'Pending' ? 'var(--warning)' : 'var(--danger)'}">${t.status || 'Pending'}</span></td>
-            <td class="action-btns">
-                ${t.status === 'Pending' ? `
-                    <button class="btn btn-success" style="padding:6px 12px;font-size:12px;" onclick="approveTrx('${t.id}')">Approve</button>
-                    <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="rejectTrx('${t.id}')">Reject</button>
-                ` : '<span style="color:var(--text-muted);font-size:12px;">--</span>'}
-            </td>
-        </tr>
-    `).join('');
+    document.getElementById('trx-list').innerHTML = filtered.length
+        ? filtered.map(trxRow).join('')
+        : '<tr><td colspan="6" style="text-align:center;">No matching transactions</td></tr>';
 }
 
 async function approveTrx(id) {
@@ -283,9 +307,8 @@ async function approveTrx(id) {
     try {
         await db.collection('transactions').doc(id).update({ status: 'Success' });
         if (trx.type === 'Withdraw') {
-            // FIX: balance was ALREADY deducted when the user created the withdrawal request.
-            // The old code deducted it AGAIN here (double deduction). On approval we only
-            // count the amount in the user's lifetime withdraw total.
+            // Balance pehle hi kat chuka hai (request ke time). Sirf lifetime total badhao.
+            // Double-deduction bug se bacho: balance mat chhedo.
             await db.collection('users').doc(trx.userId).update({
                 totalWithdraw: firebase.firestore.FieldValue.increment(trx.amount || 0)
             });
@@ -299,24 +322,23 @@ async function approveTrx(id) {
 async function rejectTrx(id) {
     const trx = allTrx.find(t => t.id === id);
     if (!trx) return;
-    const userRef = db.collection('users').doc(trx.userId);
     try {
         await db.collection('transactions').doc(id).update({ status: 'Rejected' });
         if (trx.type === 'Withdraw') {
-            // FIX: refund the money! Previously a rejected withdrawal was NOT refunded and
-            // the user's deducted balance was simply lost.
-            await db.runTransaction(async tx => {
-                const u = await tx.get(userRef);
+            // Paisa wapas: reject par refund (warna user ka paisa gayab)
+            await db.runTransaction(async (tx) => {
+                const ref = db.collection('users').doc(trx.userId);
+                const u = await tx.get(ref);
                 const bal = ((u.exists ? u.data().balance : 0) || 0) + (trx.amount || 0);
-                tx.update(userRef, { balance: bal });
+                tx.update(ref, { balance: bal });
             });
             showToast('Withdrawal rejected & amount refunded', 'var(--success)');
         } else if (trx.type === 'Deposit') {
-            // Rejected deposit: remove the credited amount (never below zero)
-            await db.runTransaction(async tx => {
-                const u = await tx.get(userRef);
+            await db.runTransaction(async (tx) => {
+                const ref = db.collection('users').doc(trx.userId);
+                const u = await tx.get(ref);
                 const bal = Math.max(0, ((u.exists ? u.data().balance : 0) || 0) - (trx.amount || 0));
-                tx.update(userRef, { balance: bal });
+                tx.update(ref, { balance: bal });
             });
             showToast('Transaction rejected', 'var(--danger)');
         } else {
@@ -329,10 +351,10 @@ async function rejectTrx(id) {
 
 // ==================== KYC ====================
 function loadKYC() {
-    db.collection('kyc_requests').orderBy('timestamp', 'desc').onSnapshot(snap => {
+    track(db.collection('kyc_requests').orderBy('timestamp', 'desc').onSnapshot(snap => {
         const list = document.getElementById('kyc-list');
         const requests = [];
-        snap.forEach(doc => requests.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(d => requests.push({ id: d.id, ...d.data() }));
         if (!requests.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No KYC requests</td></tr>'; return; }
         list.innerHTML = requests.map(r => `
             <tr>
@@ -341,35 +363,35 @@ function loadKYC() {
                 <td>${r.aadharNumber || '--'}</td>
                 <td><span style="color:${r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'}">${r.status || 'pending'}</span></td>
                 <td class="action-btns">
-                    ${r.status === 'pending' ? `
-                        <button class="btn btn-success" style="padding:6px 12px;font-size:12px;" onclick="approveKYC('${r.id}','${r.userId}')">Approve</button>
-                        <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="rejectKYC('${r.id}')">Reject</button>
+                    ${(!r.status || r.status === 'pending') ? `
+                        <button class="btn btn-success" style="padding:6px 12px;font-size:12px;" onclick="approveKYC('${r.id}','${r.userId || ''}')">Approve</button>
+                        <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="rejectKYC('${r.id}','${r.userId || ''}')">Reject</button>
                     ` : '<span style="color:var(--text-muted);font-size:12px;">--</span>'}
                 </td>
-            </tr>
-        `).join('');
-    });
+            </tr>`).join('');
+    }));
 }
 
 async function approveKYC(reqId, userId) {
     await db.collection('kyc_requests').doc(reqId).update({ status: 'approved' });
-    await db.collection('users').doc(userId).update({ kycStatus: 'approved' });
+    if (userId) await db.collection('users').doc(userId).update({ kycStatus: 'approved' });
     showToast('KYC approved', 'var(--success)');
 }
 
-async function rejectKYC(reqId) {
+async function rejectKYC(reqId, userId) {
     await db.collection('kyc_requests').doc(reqId).update({ status: 'rejected' });
+    if (userId) await db.collection('users').doc(userId).update({ kycStatus: 'rejected' });
     showToast('KYC rejected', 'var(--danger)');
 }
 
 // ==================== BETS ====================
 function loadBets() {
-    db.collection('bets').orderBy('timestamp', 'desc').onSnapshot(snap => {
+    track(db.collection('bets').orderBy('timestamp', 'desc').limit(200).onSnapshot(snap => {
         allBets = [];
-        snap.forEach(doc => allBets.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(d => allBets.push({ id: d.id, ...d.data() }));
         renderBets();
         updateStats();
-    });
+    }));
 }
 
 function renderBets() {
@@ -377,22 +399,34 @@ function renderBets() {
     if (!allBets.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No bets</td></tr>'; return; }
     list.innerHTML = allBets.map(b => `
         <tr>
-            <td>${b.creatorName || b.creatorId || 'Unknown'}</td>
-            <td>${b.joinerName || b.joinerId || '--'}</td>
+            <td>${b.creatorName || 'Unknown'}</td>
+            <td>${b.joinerName || '--'}</td>
             <td>₹${b.amount || 0}</td>
             <td>${b.roomCode || '--'}</td>
-            <td><span style="color:${b.status === 'completed' ? 'var(--success)' : b.status === 'playing' ? 'var(--primary)' : 'var(--warning)'}">${b.status || 'Waiting'}</span></td>
-        </tr>
-    `).join('');
+            <td><span style="color:${b.status === 'completed' ? 'var(--success)' : b.status === 'playing' ? 'var(--primary)' : 'var(--warning)'}">${b.status || 'waiting'}</span></td>
+        </tr>`).join('');
+}
+
+// Result set karo (winner ka paisa + win total). Loser ka paisa pehle hi kat chuka hai.
+async function settleBet(betId, winnerUid) {
+    const bet = allBets.find(b => b.id === betId);
+    if (!bet || bet.status !== 'playing') return;
+    const prize = (bet.amount || 0) * 2;
+    await db.collection('bets').doc(betId).update({ status: 'completed', winnerId: winnerUid });
+    await db.collection('users').doc(winnerUid).update({
+        balance: firebase.firestore.FieldValue.increment(prize),
+        totalWin: firebase.firestore.FieldValue.increment(prize)
+    });
+    showToast('Bet settled! Winner got ₹' + prize, 'var(--success)');
 }
 
 // ==================== GAMES ====================
 function loadGames() {
-    db.collection('games').onSnapshot(snap => {
+    track(db.collection('games').onSnapshot(snap => {
         allGames = [];
-        snap.forEach(doc => allGames.push({ id: doc.id, ...doc.data() }));
+        snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
         renderGames();
-    });
+    }));
 }
 
 function renderGames() {
@@ -407,13 +441,11 @@ function renderGames() {
                 <button class="btn btn-warning" style="padding:6px 12px;font-size:12px;" onclick="editGame('${g.id}')"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="deleteGame('${g.id}')"><i class="fas fa-trash"></i></button>
             </td>
-        </tr>
-    `).join('');
+        </tr>`).join('');
 }
 
-// FIX: track edit mode. The old editGame() DELETED the game immediately when the user
-// just wanted to edit it — a dangerous bug. Now it only fills the form, and saveGame()
-// updates the existing document when editing.
+// Edit mode: purana bug tha — Edit dabate hi game delete ho jata tha.
+// Ab sirf form bharta hai, Save par update hota hai.
 let editingGameId = null;
 
 async function saveGame(btn) {
@@ -455,25 +487,28 @@ async function deleteGame(id) {
     showToast('Game deleted', 'var(--danger)');
 }
 
-// ==================== REFERRALS ====================
-function loadReferrals() {
-    db.collection('referrals').onSnapshot(snap => {
-        allReferrals = [];
-        snap.forEach(doc => allReferrals.push({ id: doc.id, ...doc.data() }));
-        renderReferrals();
-    });
+// ==================== REFERRALS (computed — koi alag collection nahi) ====================
+// REMOVED: purana 'referrals' collection kabhi banta hi nahi tha (hamesha khaali).
+// Ab users se gin ke dikhta hai: referredBy + referralCommission.
+function loadReferralStats() {
+    renderReferrals();
 }
 
 function renderReferrals() {
     const list = document.getElementById('referral-list');
-    if (!allReferrals.length) { list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No referral data</td></tr>'; return; }
-    list.innerHTML = allReferrals.map(r => `
+    const earners = allUsers.filter(u => (u.referralCommission || 0) > 0 ||
+        allUsers.some(x => x.referredBy && x.referredBy === (u.referralCode || u.userId)));
+    if (!earners.length) { list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No referral data</td></tr>'; return; }
+    list.innerHTML = earners.map(u => {
+        const code = u.referralCode || u.userId;
+        const count = allUsers.filter(x => x.referredBy === code).length;
+        return `
         <tr>
-            <td>${r.userName || r.userId || 'Unknown'}</td>
-            <td>${r.referredCount || 0}</td>
-            <td>₹${r.totalCommission || 0}</td>
-        </tr>
-    `).join('');
+            <td>${u.name || 'Unknown'} (${u.userId || u.id})</td>
+            <td>${count}</td>
+            <td>₹${u.referralCommission || 0}</td>
+        </tr>`;
+    }).join('');
 }
 
 async function saveReferralSettings(btn) {
@@ -486,25 +521,38 @@ async function saveReferralSettings(btn) {
 }
 
 // ==================== MAIL ====================
+// FIX: purana code 5-digit userId ko doc-id samajhta tha (mail kabhi pahunchta hi nahi tha).
+// Ab userId field se dhoondh ke sahi doc me likhta hai.
 async function sendMail(btn) {
     loading(btn, true);
     const subject = document.getElementById('m-subject').value.trim();
     const body = document.getElementById('m-body').value.trim();
     const type = document.getElementById('m-recipients').value;
-    const userId = document.getElementById('m-user-id').value.trim();
+    const userIdInput = document.getElementById('m-user-id').value.trim();
     if (!subject || !body) { showToast('Subject and body required', 'var(--danger)'); loading(btn, false); return; }
-    if (type === 'single' && !userId) { showToast('User ID required', 'var(--danger)'); loading(btn, false); return; }
-    const recipients = type === 'all' ? allUsers.map(u => ({ userId: u.userId || u.id, name: u.name || 'User' })) : [{ userId, name: 'User' }];
-    for (const r of recipients) {
-        await db.collection('users').doc(r.userId).collection('mails').add({ subject, body, from: 'Admin', timestamp: firebase.firestore.FieldValue.serverTimestamp(), read: false });
+    let targets = allUsers;
+    if (type === 'single') {
+        if (!userIdInput) { showToast('User ID required', 'var(--danger)'); loading(btn, false); return; }
+        targets = allUsers.filter(u => String(u.userId) === userIdInput || u.id === userIdInput);
+        if (!targets.length) { showToast('User not found', 'var(--danger)'); loading(btn, false); return; }
     }
-    showToast(`Mail sent to ${recipients.length} user(s)`, 'var(--success)');
-    document.getElementById('m-subject').value = '';
-    document.getElementById('m-body').value = '';
+    try {
+        for (const u of targets) {
+            await db.collection('users').doc(u.id).collection('mails').add({
+                subject, body, from: 'Admin', read: false,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        showToast(`Mail sent to ${targets.length} user(s)`, 'var(--success)');
+        document.getElementById('m-subject').value = '';
+        document.getElementById('m-body').value = '';
+    } catch (e) {
+        showToast('Error: ' + e.message, 'var(--danger)');
+    }
     loading(btn, false);
 }
 
-document.getElementById('m-recipients').addEventListener('change', function() {
+document.getElementById('m-recipients').addEventListener('change', function () {
     document.getElementById('m-user-id').style.display = this.value === 'single' ? 'block' : 'none';
 });
 
@@ -533,16 +581,28 @@ async function saveSupport(btn) {
 
 // ==================== SETTINGS ====================
 function loadSettings() {
-    db.collection('settings').doc('app').get().then(doc => {
-        if (doc.exists) {
-            const d = doc.data();
-            document.getElementById('s-deposit-opts').value = d.depositOptions || '100,200,300,400,500,1000,2000,5000';
-            document.getElementById('s-min-deposit').value = d.minDeposit || 100;
-            document.getElementById('s-min-withdraw').value = d.minWithdraw || 100;
-            document.getElementById('s-privacy').value = d.privacy || '';
-            document.getElementById('s-terms').value = d.terms || '';
-            document.getElementById('s-about').value = d.about || '';
-            document.getElementById('s-rules').value = d.rules || '';
+    db.collection('settings').doc('app').get().then(d => {
+        if (d.exists) {
+            const s = d.data();
+            document.getElementById('s-deposit-opts').value = s.depositOptions || '100,200,300,400,500,1000,2000,5000';
+            document.getElementById('s-min-deposit').value = s.minDeposit || 100;
+            document.getElementById('s-min-withdraw').value = s.minWithdraw || 195;
+            if (document.getElementById('s-max-withdraw')) document.getElementById('s-max-withdraw').value = s.maxWithdraw || 50000;
+        }
+    }).catch(() => {});
+    db.collection('settings').doc('referral').get().then(d => {
+        if (d.exists && d.data().commission !== undefined) document.getElementById('r-commission').value = d.data().commission;
+    }).catch(() => {});
+    db.collection('settings').doc('welcome').get().then(d => {
+        if (d.exists && d.data().message) document.getElementById('m-welcome').value = d.data().message;
+    }).catch(() => {});
+    db.collection('settings').doc('support').get().then(d => {
+        if (d.exists) {
+            const s = d.data();
+            document.getElementById('s-whatsapp').value = s.whatsapp || '';
+            document.getElementById('s-telegram').value = s.telegram || '';
+            document.getElementById('s-chat').value = s.chat || '';
+            document.getElementById('s-support-logo').value = s.logo || '';
         }
     }).catch(() => {});
 }
@@ -552,11 +612,8 @@ async function saveAppSettings(btn) {
     const data = {
         depositOptions: document.getElementById('s-deposit-opts').value,
         minDeposit: parseFloat(document.getElementById('s-min-deposit').value) || 100,
-        minWithdraw: parseFloat(document.getElementById('s-min-withdraw').value) || 100,
-        privacy: document.getElementById('s-privacy').value.trim(),
-        terms: document.getElementById('s-terms').value.trim(),
-        about: document.getElementById('s-about').value.trim(),
-        rules: document.getElementById('s-rules').value.trim()
+        minWithdraw: parseFloat(document.getElementById('s-min-withdraw').value) || 195,
+        maxWithdraw: parseFloat((document.getElementById('s-max-withdraw') || {}).value) || 50000
     };
     await db.collection('settings').doc('app').set(data, { merge: true });
     showToast('Settings saved', 'var(--success)');
@@ -564,6 +621,13 @@ async function saveAppSettings(btn) {
 }
 
 // ==================== STATS ====================
+function fmtDate(ts) {
+    try {
+        if (ts && ts.toDate) return ts.toDate().toLocaleString();
+    } catch (e) {}
+    return 'N/A';
+}
+
 function updateStats() {
     document.getElementById('stat-users').textContent = allUsers.length || 0;
     const totalDep = allTrx.filter(t => t.type === 'Deposit' && t.status === 'Success').reduce((s, t) => s + (t.amount || 0), 0);
@@ -583,8 +647,7 @@ function updateStats() {
         <tr>
             <td>${b.creatorName || '?'} ${b.joinerName ? 'vs ' + b.joinerName : '(waiting)'}</td>
             <td>₹${b.amount || 0}</td>
-            <td><span style="color:${b.status === 'completed' ? 'var(--success)' : b.status === 'playing' ? 'var(--primary)' : 'var(--warning)'}">${b.status || 'Waiting'}</span></td>
-            <td>${b.timestamp ? new Date(b.timestamp.toDate()).toLocaleString() : 'N/A'}</td>
-        </tr>
-    `).join('');
+            <td><span style="color:${b.status === 'completed' ? 'var(--success)' : b.status === 'playing' ? 'var(--primary)' : 'var(--warning)'}">${b.status || 'waiting'}</span></td>
+            <td>${fmtDate(b.timestamp)}</td>
+        </tr>`).join('');
 }
