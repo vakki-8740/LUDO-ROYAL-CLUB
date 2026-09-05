@@ -76,14 +76,16 @@ async function apiCall(action, data = {}) {
 
 // ==================== AUTH (Google-only) ====================
 // Flow: Firebase Google popup -> Google profile -> PHP backend login/auto-register.
+// Firebase config BACKEND API se aati hai (firebase-config.js -> window.FirebaseReady).
 async function loginWithGoogle() {
     if (!window.firebase || !firebase.auth) {
         showToast('Google login load nahi hua. Internet check karo.', '#ff3b30');
         return;
     }
-    if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
-        showToast('Firebase config missing! env.js check karo.', '#ff3b30');
-        return;
+    // Backend se Firebase config aane ka wait karo
+    if (window.FirebaseReady) {
+        const ok = await window.FirebaseReady;
+        if (!ok) { showToast('Login taiyaar nahi hua. Page refresh karo.', '#ff3b30'); return; }
     }
     showLoading();
     try {
@@ -108,21 +110,27 @@ async function loginWithGoogle() {
     }
 }
 
-// Page reload par: agar Google session hai to backend se auto-login.
-if (window.firebase && firebase.auth) {
-    firebase.auth().onAuthStateChanged(async (g) => {
-        if (g && !currentUser && document.getElementById('login-page').style.display !== 'none') {
-            try {
-                const res = await apiCall('login', {
-                    google_uid: g.uid || '',
-                    email: g.email || '',
-                    name: g.displayName || 'Player',
-                    profileLogo: g.photoURL || getRandomLogo()
-                });
-                currentUser = res.user;
-                afterLogin();
-            } catch (e) { /* login page par hi raho */ }
-        }
+// Page reload par: Firebase config ready hone ke baad, agar Google session
+// hai to backend se auto-login.
+if (window.FirebaseReady) {
+    window.FirebaseReady.then(function (ok) {
+        if (!ok || !window.firebase || !firebase.auth) return;
+        firebase.auth().onAuthStateChanged(async (g) => {
+            if (g && !currentUser) {
+                const lp = document.getElementById('login-page');
+                if (lp && lp.style.display === 'none') return;
+                try {
+                    const res = await apiCall('login', {
+                        google_uid: g.uid || '',
+                        email: g.email || '',
+                        name: g.displayName || 'Player',
+                        profileLogo: g.photoURL || getRandomLogo()
+                    });
+                    currentUser = res.user;
+                    afterLogin();
+                } catch (e) { /* login page par hi raho */ }
+            }
+        });
     });
 }
 

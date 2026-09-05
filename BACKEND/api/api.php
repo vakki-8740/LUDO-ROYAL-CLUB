@@ -276,6 +276,14 @@ switch ($action) {
         json_out(['success' => true, 'games' => $st->fetchAll()]);
     }
 
+    // ---------- FRONTEND CONFIG (Firebase Google login ke liye) ----------
+    // Config DB se nahi, BACKEND/api/firebase_config.php se aati hai.
+    // Koi field nahi chahiye — GET ya POST dono chalenge.
+    case 'getFirebaseConfig': {
+        $cfg = require __DIR__ . '/firebase_config.php';
+        json_out(['success' => true, 'config' => $cfg]);
+    }
+
     default:
         json_out(['success' => false, 'error' => 'Unknown action: ' . $action], 404);
 }

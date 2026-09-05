@@ -10,6 +10,3 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
-
-# Local env config (may contain credentials — not needed: app uses PHP backend now)
-/FRONTEND/user/env.js
