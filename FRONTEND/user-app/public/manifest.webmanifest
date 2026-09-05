@@ -1,0 +1,14 @@
+{
+  "name": "Ludo Royal Club - Play & Win",
+  "short_name": "Ludo Royal Club",
+  "description": "Play Ludo games and win real money prizes",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "orientation": "portrait",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "./logo.png", "sizes": "any", "type": "image/png" }
+  ]
+}
