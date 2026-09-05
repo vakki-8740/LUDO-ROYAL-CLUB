@@ -7,8 +7,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // TODO: 'admin@example.com' ki jagah apna Gmail likho (admin.js me bhi same)
-    function adminEmail() { return 'admin@example.com'; }
+    // admin.js me ADMIN_EMAILS ke same hona chahiye
+    function adminEmail() { return 'vakkiadmin@gmail.com'; }
     function isAdmin() {
       return request.auth != null && request.auth.token.email == adminEmail();
     }
