@@ -1,4 +1,4 @@
-const CACHE = 'ludo-royal-club-v2'; // logo update — naya cache naam purane clients ko refresh karega
+const CACHE = 'ludo-royal-club-v3'; // SW fix: POST kabhi cache nahi (TypeError aata tha)
 const URLS = ['index.html', 'app.js', 'pages-content.js', 'style.css', 'firebase-config.js', 'manifest.json', 'PROJECT-KOGO/ludo-royal-club-logo.png', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
@@ -12,6 +12,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // POST/PUT (login, bets, wallet) kabhi cache mat karo — Cache API sirf GET support karta hai
+  if (e.request.method !== 'GET') return;
   // FIX: network-first strategy. The old cache-first approach kept serving OLD cached
   // JS/HTML even after an update, so new changes (KYC popup, demo bets) never appeared.
   // Now it always tries the network first and only falls back to cache when offline.
