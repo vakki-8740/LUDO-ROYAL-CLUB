@@ -1,5 +1,5 @@
-const CACHE = 'ludo-royal-club-admin-v1'; // Ludo Royal Club (new cache name forces refresh)
-const URLS = ['admin.html', '../user/firebase-config.js', 'admin.js', 'admin-styles.css', 'manifest.json', '../user/icons/icon.svg', '../user/icons/icon-192.png'];
+const CACHE = 'ludo-royal-club-admin-v2'; // admin.html -> index.html rename
+const URLS = ['index.html', '../user/firebase-config.js', 'admin.js', 'admin-styles.css', 'manifest.json', '../user/icons/icon.svg', '../user/icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));

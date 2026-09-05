@@ -2,7 +2,7 @@
   "name": "Ludo Royal Club Admin",
   "short_name": "LRC Admin",
   "description": "Admin panel for Ludo Royal Club gaming app",
-  "start_url": "admin.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#1c1c1e",
   "theme_color": "#0a0a0b",
