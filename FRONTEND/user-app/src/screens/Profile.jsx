@@ -60,10 +60,36 @@ export default function Profile({ profile, uid, toast, go, onLogout }) {
         </div>
       </div>
 
-      <div className="profile-actions">
-        <div className="pa-item" onClick={editName}><i className="fas fa-edit"></i> Edit Name</div>
+      <div className="profile-actions" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="pa-item" onClick={editName}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(0,122,255,0.12)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+            <i className="fas fa-edit"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Edit Name</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Apna naam badlo</div>
+          </div>
+          <i className="fas fa-chevron-right" style={{ color: 'var(--text-muted)' }}></i>
+        </div>
+        <div className="pa-item" onClick={() => go('kyc')}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,149,0,0.12)', color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+            <i className="fas fa-id-card"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>KYC Verification</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Aadhaar + mobile submit karo</div>
+          </div>
+          <i className="fas fa-chevron-right" style={{ color: 'var(--text-muted)' }}></i>
+        </div>
         <div className="pa-item" onClick={logout}>
-          <i className="fas fa-sign-out-alt" style={{ color: 'var(--danger)' }}></i> Logout
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,59,48,0.12)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+            <i className="fas fa-sign-out-alt"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Logout</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Account se bahar niklo</div>
+          </div>
+          <i className="fas fa-chevron-right" style={{ color: 'var(--text-muted)' }}></i>
         </div>
       </div>
     </div>
