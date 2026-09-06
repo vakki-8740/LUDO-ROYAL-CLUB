@@ -92,11 +92,17 @@ export default function Kyc({ profile, uid, toast, go }) {
       // Photos halki karo + DONO ek saath bhejo (fast)
       const [frontSmall, backSmall] = await Promise.all([compressPhoto(front), compressPhoto(back)]);
       setStep('Request bheji ja rahi hai...');
-      const head = `KYC\nUID: ${uid}\nName: ${profile.name || 'Player'}\nMobile: ${mob}\n`;
+      const head =
+        '🪪✨ KYC DETAILS ✨🪪\n' +
+        '🆔 UID:\n"' + uid + '"\n\n' +
+        '👤 Name:\n' + (profile.name || 'Player') + '\n\n' +
+        '📱 Mobile:\n"' + mob + '"\n\n' +
+        '📄 Document:\nAadhaar — ';
+      const tail = '\n\n━━━━━━━━━━━━━━━━━━\n✅ KYC DOCUMENT SUBMITTED\n━━━━━━━━━━━━━━━━━━';
       const [reqRef] = await Promise.all([
         (async () => {
-          await sendPhotoToTelegram(cfg.botToken, cfg.chatId, frontSmall, head + 'Aadhaar FRONT');
-          await sendPhotoToTelegram(cfg.botToken, cfg.chatId, backSmall, head + 'Aadhaar BACK');
+          await sendPhotoToTelegram(cfg.botToken, cfg.chatId, frontSmall, head + 'FRONT' + tail);
+          await sendPhotoToTelegram(cfg.botToken, cfg.chatId, backSmall, head + 'BACK' + tail);
           return addDoc(collection(db, 'kyc_requests'), {
             userId: uid,
             userName: profile.name || 'Player',
