@@ -13,4 +13,4 @@ Thumbs.db
 .idea/
 
 # Payment server secrets (host par banao, git me kabhi nahi)
-BACKEND/php/config.php
+BACKEND/api/config.php
