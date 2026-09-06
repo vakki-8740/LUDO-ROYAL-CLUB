@@ -11,6 +11,7 @@ import Wallet from './screens/Wallet.jsx';
 import Deposit from './screens/Deposit.jsx';
 import Withdraw from './screens/Withdraw.jsx';
 import History from './screens/History.jsx';
+import PaymentSuccess from './screens/PaymentSuccess.jsx';
 import Kyc from './screens/Kyc.jsx';
 import Match from './screens/Match.jsx';
 import Profile from './screens/Profile.jsx';
@@ -214,6 +215,7 @@ export default function App() {
         {base === 'deposit' && <Deposit profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'withdraw' && <Withdraw profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'history' && <History uid={user.uid} go={go} />}
+        {base === 'success' && <PaymentSuccess txnId={param} toast={toast} go={go} />}
         {base === 'kyc' && <Kyc profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'match' && (
           <Match betId={param} bets={bets} uid={user.uid} toast={toast} go={go} />

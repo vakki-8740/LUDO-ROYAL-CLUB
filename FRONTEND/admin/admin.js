@@ -727,6 +727,14 @@ function loadSettings() {
     db.collection('settings').doc('razorpay').get().then(d => {
         if (d.exists) document.getElementById('s-rzp-key').value = d.data().keyId || '';
     }).catch(() => {});
+    // Payment links
+    db.collection('settings').doc('paylinks').get().then(d => {
+        if (d.exists) {
+            const links = d.data().links || {};
+            document.getElementById('s-pay-links').value =
+                Object.keys(links).map(k => k + '=' + links[k]).join('\n');
+        }
+    }).catch(() => {});
     // Payment server
     db.collection('settings').doc('payment').get().then(d => {
         if (d.exists) document.getElementById('s-pay-server').value = d.data().serverUrl || '';
@@ -748,6 +756,23 @@ function loadSettings() {
 }
 
 // KYC Telegram: bot token + channel chat id (Aadhaar photos channel me jayengi)
+// Payment Links: har chip amount ka alag Razorpay link (fixed-amount link banao)
+async function savePayLinks(btn) {
+    loading(btn, true);
+    const links = {};
+    document.getElementById('s-pay-links').value.split('\n').forEach(line => {
+        const i = line.indexOf('=');
+        if (i > 0) {
+            const amt = parseInt(line.slice(0, i).trim());
+            const url = line.slice(i + 1).trim();
+            if (amt > 0 && url) links[String(amt)] = url;
+        }
+    });
+    await db.collection('settings').doc('paylinks').set({ links }, { merge: true });
+    showToast('Payment links saved (' + Object.keys(links).length + ')', 'var(--success)');
+    loading(btn, false);
+}
+
 // Payment Server URL (QR + webhook wala PHP host)
 async function savePaymentServer(btn) {
     loading(btn, true);

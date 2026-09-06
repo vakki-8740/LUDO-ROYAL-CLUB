@@ -231,6 +231,12 @@
                         <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Key Secret yahan MAT dalo — wo server par lagta hai, app me nahi.</p>
                         <button class="btn btn-success" onclick="saveRazorpay(this)"><span class="btn-text">Save Key</span><div class="spinner"></div></button>
                     </div>
+                    <div class="header" style="margin-top:40px;"><h1>Payment Links (har chip ka alag link)</h1></div>
+                    <div class="form-card">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Har line me: amount=link (Razorpay dashboard se fixed-amount link banao)</label>
+                        <textarea id="s-pay-links" rows="6" placeholder="100=https://rzp.io/rzp/AAAA&#10;200=https://rzp.io/rzp/BBBB&#10;500=https://rzp.io/rzp/CCCC"></textarea>
+                        <button class="btn btn-success" onclick="savePayLinks(this)"><span class="btn-text">Save Links</span><div class="spinner"></div></button>
+                    </div>
                     <div class="header" style="margin-top:40px;"><h1>Payment Server (auto deposit ke liye)</h1></div>
                     <div class="form-card">
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Server URL (PHP host ka api folder)</label>
