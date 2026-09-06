@@ -27,6 +27,15 @@ return [
     'firebase_project_id'   => $env('FIREBASE_PROJECT_ID', 'ludojoy-ca35c'),
     'firebase_service_json' => $env('FIREBASE_SERVICE_JSON', '{ "type": "service_account", ... YAHAN_POORA_JSON ... }'),
 
+    // PayU Dashboard > Settings (TEST mode pehle)
+    // TEST: https://test.payu.in | LIVE: https://secure.payu.in
+    'payu_key'   => $env('PAYU_KEY', ''),
+    'payu_salt'  => $env('PAYU_SALT', ''),
+    'payu_base'  => $env('PAYU_BASE', 'https://test.payu.in'),
+
+    // Frontend jahan wapas bhejna hai (surl/furl isi par banta hai)
+    'frontend_base' => $env('FRONTEND_BASE', 'https://ludoroyalclub.vercel.app'),
+
     // Kaunse frontend ko allow karna hai
     'allowed_origins' => $env('ALLOWED_ORIGINS', 'https://ludoroyalclub.vercel.app'),
 ];

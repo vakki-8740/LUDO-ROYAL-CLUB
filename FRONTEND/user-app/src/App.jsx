@@ -94,6 +94,17 @@ export default function App() {
   const toastTimer = useRef(null);
   const autoNavRef = useRef('');
 
+  // PayU se wapas: ?pay=txnId -> success page (asli status backend se)
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get('pay');
+      if (q) {
+        setScreen('success:' + String(q).trim().slice(0, 40));
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch (e) {}
+  }, []);
+
   const toast = useCallback((msg, bg) => {
     setToastMsg({ msg, bg: bg || 'rgba(28,28,30,0.95)' });
     if (toastTimer.current) clearTimeout(toastTimer.current);

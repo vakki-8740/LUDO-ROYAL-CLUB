@@ -5,11 +5,11 @@ import { TopBar } from '../components/ui.jsx';
 
 const FALLBACK_AMOUNTS = [100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000];
 
-// Deposit: SIRF chips (custom amount nahi). Chip tap -> PENDING order ->
-// us chip ka payment link (admin set) -> pay karo -> success page status check.
+// Deposit: SIRF chips. Chip tap -> server PENDING order ->
+// PayU page (hidden form post) -> wapas success page (status polling).
+// Paisa sirf server verify ke baad judta hai.
 export default function Deposit({ profile, uid, toast, go }) {
   const [amounts, setAmounts] = useState(FALLBACK_AMOUNTS);
-  const [links, setLinks] = useState({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -24,40 +24,49 @@ export default function Deposit({ profile, uid, toast, go }) {
         }
       })
       .catch(() => {});
-    getDoc(doc(db, 'settings', 'paylinks'))
-      .then((d) => {
-        if (d.exists() && d.data().links) setLinks(d.data().links);
-      })
-      .catch(() => {});
   }, []);
 
-  async function serverUrl() {
-    const pay = await getDoc(doc(db, 'settings', 'payment'));
-    const server = pay.exists() ? (pay.data().serverUrl || '').replace(/\/+$/, '') : '';
-    if (!server) throw new Error('Payment server set nahi hai. Admin se bolo.');
-    return server;
-  }
-
   async function tapChip(amt) {
-    const url = links[String(amt)];
-    if (!url) return toast('₹' + amt + ' ka link abhi nahi laga. Thodi der baad try karo.', '#ff9500');
+    let minDep = 100;
+    try {
+      const d = await getDoc(doc(db, 'settings', 'app'));
+      if (d.exists() && d.data().minDeposit) minDep = parseFloat(d.data().minDeposit);
+    } catch (e) {}
+    if (!amt || amt < minDep) return toast('Minimum deposit ₹' + minDep, '#ff3b30');
     setBusy(true);
     try {
-      const server = await serverUrl();
-      // 1) Backend PENDING order (unique txnId, amount server whitelist check)
-      const r = await fetch(server + '/create-order.php', {
+      const pay = await getDoc(doc(db, 'settings', 'payment'));
+      const server = pay.exists() ? (pay.data().serverUrl || '').replace(/\/+$/, '') : '';
+      if (!server) throw new Error('Payment server set nahi hai. Admin se bolo.');
+      // 1) Backend PENDING order (amount server whitelist check)
+      const r = await fetch(server + '/payu-order.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amt, userId: uid, userName: profile.name || '' })
+        body: JSON.stringify({
+          amount: amt,
+          userId: uid,
+          userName: profile.name || '',
+          email: profile.email || '',
+          phone: profile.mobile || ''
+        })
       });
       const j = await r.json();
       if (!j.success) throw new Error(j.error || 'Order nahi bana');
-      // 2) Payment link kholo (Razorpay page), wapas aane par status page
-      window.open(url, '_blank');
-      go('success:' + j.txnId);
+      // 2) PayU page par hidden form post (Razorpay page NAHI khulta)
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = j.payu_url;
+      Object.keys(j.fields).forEach((k) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = k;
+        inp.value = j.fields[k];
+        form.appendChild(inp);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch (e) {
       toast('Error: ' + e.message, '#ff3b30');
-    } finally {
       setBusy(false);
     }
   }
@@ -69,18 +78,13 @@ export default function Deposit({ profile, uid, toast, go }) {
         <div className="dp-label">Amount chuno (tap karte hi payment khulega)</div>
         <div className="dp-chips">
           {amounts.map((amt) => (
-            <div
-              key={amt}
-              className="dp-chip"
-              onClick={() => !busy && tapChip(amt)}
-              style={{ opacity: links[String(amt)] ? 1 : 0.45 }}
-            >
+            <div key={amt} className="dp-chip" onClick={() => !busy && tapChip(amt)}>
               ₹{amt}
             </div>
           ))}
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
-          Payment ke baad verify hokar balance khud jud jayega
+          {busy ? 'Order ban raha hai...' : 'Payment ke baad verify hokar balance khud jud jayega'}
         </p>
       </div>
     </div>

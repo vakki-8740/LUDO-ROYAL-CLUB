@@ -723,9 +723,12 @@ function loadSettings() {
             document.getElementById('s-chat').value = s.chat || '';
         }
     }).catch(() => {});
-    // Razorpay key
-    db.collection('settings').doc('razorpay').get().then(d => {
-        if (d.exists) document.getElementById('s-rzp-key').value = d.data().keyId || '';
+    // PayU keys (display)
+    db.collection('settings').doc('payu').get().then(d => {
+        if (d.exists) {
+            document.getElementById('s-payu-key').value = d.data().key || '';
+            document.getElementById('s-payu-salt').value = d.data().salt || '';
+        }
     }).catch(() => {});
     // Payment links
     db.collection('settings').doc('paylinks').get().then(d => {
@@ -783,13 +786,14 @@ async function savePaymentServer(btn) {
     loading(btn, false);
 }
 
-// Razorpay Key ID (sirf Key ID — Secret kabhi app/admin me nahi)
-async function saveRazorpay(btn) {
+// PayU Test Key + Salt (display ke liye; asli verify server config se hota hai)
+async function savePayU(btn) {
     loading(btn, true);
-    const keyId = document.getElementById('s-rzp-key').value.trim();
-    if (!keyId) { showToast('Key ID dalo', 'var(--danger)'); loading(btn, false); return; }
-    await db.collection('settings').doc('razorpay').set({ keyId }, { merge: true });
-    showToast('Razorpay key saved', 'var(--success)');
+    const key = document.getElementById('s-payu-key').value.trim();
+    const salt = document.getElementById('s-payu-salt').value.trim();
+    if (!key || !salt) { showToast('Key aur Salt dono dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('payu').set({ key, salt }, { merge: true });
+    showToast('PayU saved (Salt server config me bhi dalna hai)', 'var(--success)');
     loading(btn, false);
 }
 
