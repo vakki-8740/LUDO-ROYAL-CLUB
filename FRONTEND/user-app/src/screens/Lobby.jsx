@@ -23,6 +23,8 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
     );
   }, [bets, q]);
 
+  const playingBets = filtered.filter((b) => b.status === 'playing' || b.status === 'completed');
+
   // Bet lagao: SIRF amount. Room code tab jab koi join karega (match page par).
   async function submitBet(amountStr) {
     const amount = parseFloat(amountStr);
@@ -187,6 +189,17 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
           })
         ) : (
           <Empty text={q ? 'No bets found' : 'No bets yet'} />
+        )}
+      </div>
+
+      <div className="lobby-section-title">
+        <i className="fas fa-play-circle" style={{ color: 'var(--success)' }}></i> Currently Playing
+      </div>
+      <div id="playing-bets-container">
+        {playingBets.length ? (
+          playingBets.map((b) => <PlayingBetCard key={b.id} bet={b} />)
+        ) : (
+          <Empty text={q ? 'No active games found' : 'No active games'} />
         )}
       </div>
 
