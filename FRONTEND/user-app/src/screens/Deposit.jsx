@@ -1,10 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { addDoc, collection, doc, getDoc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { todayStr } from '../lib.js';
 import { TopBar } from '../components/ui.jsx';
 
 const FALLBACK_AMOUNTS = [100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000];
+
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => reject(new Error('Razorpay load nahi hua. Internet check karo.'));
+    document.body.appendChild(s);
+  });
+}
 
 export default function Deposit({ profile, uid, toast, go }) {
   const [amounts, setAmounts] = useState(FALLBACK_AMOUNTS);
@@ -25,6 +36,7 @@ export default function Deposit({ profile, uid, toast, go }) {
       .catch(() => {});
   }, []);
 
+  // Razorpay UPI payment -> Pending record -> admin approve -> balance
   async function submit() {
     const amt = parseInt(custom);
     let minDep = 100;
@@ -35,24 +47,43 @@ export default function Deposit({ profile, uid, toast, go }) {
     if (!amt || amt < minDep) return toast('Minimum deposit ₹' + minDep, '#ff3b30');
     setBusy(true);
     try {
+      // Key ID admin panel se (Settings > Razorpay)
+      const k = await getDoc(doc(db, 'settings', 'razorpay'));
+      const keyId = k.exists() ? (k.data().keyId || '') : '';
+      if (!keyId) throw new Error('Online payment abhi band hai. Thodi der baad try karo.');
+      await loadRazorpayScript();
+
+      const paymentId = await new Promise((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: keyId,
+          amount: amt * 100, // paise
+          currency: 'INR',
+          name: 'Ludo Royal Club',
+          description: 'Wallet Deposit ₹' + amt,
+          prefill: { name: profile.name || '', email: profile.email || '' },
+          theme: { color: '#007aff' },
+          handler: (resp) => resolve(resp.razorpay_payment_id || ''),
+          modal: { ondismiss: () => reject(new Error('cancelled')) }
+        });
+        rzp.on('payment.failed', (r) => reject(new Error((r.error && r.error.description) || 'Payment fail')));
+        rzp.open();
+      });
+
       await addDoc(collection(db, 'transactions'), {
         userId: uid,
         userName: profile.name || '',
         type: 'Deposit',
         amount: amt,
-        status: 'Success',
+        status: 'Pending',
+        details: { method: 'razorpay', razorpay_payment_id: paymentId },
         date: todayStr(),
         timestamp: serverTimestamp()
       });
-      await updateDoc(doc(db, 'users', uid), {
-        balance: increment(amt),
-        totalDeposit: increment(amt)
-      });
-      toast('₹' + amt + ' deposited successfully!', '#34c759');
+      toast('Payment mil gaya! Verify hokar balance aayega.', '#34c759');
       setCustom('');
       setTimeout(() => go('wallet'), 1200);
     } catch (e) {
-      toast('Error: ' + e.message, '#ff3b30');
+      if (e && e.message !== 'cancelled') toast('Error: ' + e.message, '#ff3b30');
     } finally {
       setBusy(false);
     }
@@ -80,8 +111,11 @@ export default function Deposit({ profile, uid, toast, go }) {
           <input type="number" placeholder="Enter amount (min ₹100)" value={custom} onChange={(e) => setCustom(e.target.value)} />
         </div>
         <button className="dp-btn" onClick={submit} disabled={busy}>
-          <i className="fas fa-plus-circle"></i> {busy ? 'Wait...' : 'Deposit'}
+          <i className="fas fa-plus-circle"></i> {busy ? 'Wait...' : 'Pay Online (UPI)'}
         </button>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
+          Payment ke baad admin verify karke balance dalega
+        </p>
       </div>
     </div>
   );

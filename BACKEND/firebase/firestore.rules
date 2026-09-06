@@ -56,10 +56,11 @@ service cloud.firestore {
     // ---------- TRANSACTIONS ----------
     match /transactions/{trxId} {
       allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
-      // User: Deposit (turant Success) ya Withdraw request (Pending) bana sakta hai
+      // User: Deposit (Razorpay ke baad Pending — admin approve par paisa)
+      // ya Withdraw request (Pending) bana sakta hai
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && ((request.resource.data.type == 'Deposit' && request.resource.data.status == 'Success')
+        && ((request.resource.data.type == 'Deposit' && request.resource.data.status in ['Success', 'Pending'])
          || (request.resource.data.type == 'Withdraw' && request.resource.data.status == 'Pending'));
       // Approve / Reject / status change: sirf admin
       allow update: if isAdmin();

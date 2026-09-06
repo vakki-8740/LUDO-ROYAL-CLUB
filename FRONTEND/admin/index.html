@@ -224,6 +224,13 @@
                         <textarea id="s-rules" placeholder="Game Rules" rows="4"></textarea>
                         <button class="btn btn-success" onclick="saveAppSettings(this)"><span class="btn-text">Save Settings</span><div class="spinner"></div></button>
                     </div>
+                    <div class="header" style="margin-top:40px;"><h1>Razorpay (online deposit)</h1></div>
+                    <div class="form-card">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Key ID (Test/Live dashboard se)</label>
+                        <input type="text" id="s-rzp-key" placeholder="rzp_test_... / rzp_live_...">
+                        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Key Secret yahan MAT dalo — wo server par lagta hai, app me nahi.</p>
+                        <button class="btn btn-success" onclick="saveRazorpay(this)"><span class="btn-text">Save Key</span><div class="spinner"></div></button>
+                    </div>
                     <div class="header" style="margin-top:40px;"><h1>KYC Telegram (Aadhaar photos yahan jayengi)</h1></div>
                     <div class="form-card">
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Bot Token (@BotFather se)</label>

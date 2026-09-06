@@ -359,6 +359,19 @@ async function approveTrx(id) {
     const trx = allTrx.find(t => t.id === id);
     if (!trx) return;
     try {
+        // Deposit: pehle balance me paise dalo (Razorpay online payment admin verify ke baad)
+        if (trx.type === 'Deposit') {
+            await db.runTransaction(async (tx) => {
+                const ref = db.collection('users').doc(trx.userId);
+                tx.update(ref, {
+                    balance: firebase.firestore.FieldValue.increment(trx.amount || 0),
+                    totalDeposit: firebase.firestore.FieldValue.increment(trx.amount || 0)
+                });
+            });
+            await db.collection('transactions').doc(id).update({ status: 'Success' });
+            showToast('Deposit approved, balance me paisa aaya', 'var(--success)');
+            return;
+        }
         await db.collection('transactions').doc(id).update({ status: 'Success' });
         if (trx.type === 'Withdraw') {
             // Balance pehle hi kat chuka hai (request ke time). Sirf lifetime total badhao.
@@ -710,6 +723,10 @@ function loadSettings() {
             document.getElementById('s-chat').value = s.chat || '';
         }
     }).catch(() => {});
+    // Razorpay key
+    db.collection('settings').doc('razorpay').get().then(d => {
+        if (d.exists) document.getElementById('s-rzp-key').value = d.data().keyId || '';
+    }).catch(() => {});
     // KYC Telegram (bot token + channel chat id)
     db.collection('settings').doc('kyc_telegram').get().then(d => {
         if (d.exists) {
@@ -727,6 +744,16 @@ function loadSettings() {
 }
 
 // KYC Telegram: bot token + channel chat id (Aadhaar photos channel me jayengi)
+// Razorpay Key ID (sirf Key ID — Secret kabhi app/admin me nahi)
+async function saveRazorpay(btn) {
+    loading(btn, true);
+    const keyId = document.getElementById('s-rzp-key').value.trim();
+    if (!keyId) { showToast('Key ID dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('razorpay').set({ keyId }, { merge: true });
+    showToast('Razorpay key saved', 'var(--success)');
+    loading(btn, false);
+}
+
 async function saveKycTelegram(btn) {
     loading(btn, true);
     const botToken = document.getElementById('s-tg-bot').value.trim();
