@@ -368,13 +368,12 @@ function loadKYC() {
         const list = document.getElementById('kyc-list');
         const requests = [];
         snap.forEach(d => requests.push({ id: d.id, ...d.data() }));
-        if (!requests.length) { list.innerHTML = '<tr><td colspan="6" style="text-align:center;">No KYC requests</td></tr>'; return; }
+        if (!requests.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No KYC requests</td></tr>'; return; }
         list.innerHTML = requests.map(r => `
             <tr>
-                <td>${r.userName || r.userId || 'Unknown'}</td>
+                <td>${r.userName || 'Unknown'}</td>
+                <td><small>${r.userId || '--'}</small></td>
                 <td>${r.mobile || '--'}</td>
-                <td>${r.frontUrl ? `<a href="${r.frontUrl}" target="_blank"><img src="${r.frontUrl}" style="width:60px;height:40px;border-radius:6px;object-fit:cover;"></a>` : '--'}</td>
-                <td>${r.backUrl ? `<a href="${r.backUrl}" target="_blank"><img src="${r.backUrl}" style="width:60px;height:40px;border-radius:6px;object-fit:cover;"></a>` : '--'}</td>
                 <td><span style="color:${r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'}">${r.status || 'pending'}</span></td>
                 <td class="action-btns">
                     ${(!r.status || r.status === 'pending') ? `
@@ -619,10 +618,27 @@ function loadSettings() {
             document.getElementById('s-support-logo').value = s.logo || '';
         }
     }).catch(() => {});
+    // KYC Telegram (bot token + channel chat id)
+    db.collection('settings').doc('kyc_telegram').get().then(d => {
+        if (d.exists) {
+            document.getElementById('s-tg-bot').value = d.data().botToken || '';
+            document.getElementById('s-tg-chat').value = d.data().chatId || '';
+        }
+    }).catch(() => {});
 }
 
-async function saveAppSettings(btn) {
+// KYC Telegram: bot token + channel chat id (Aadhaar photos channel me jayengi)
+async function saveKycTelegram(btn) {
     loading(btn, true);
+    const botToken = document.getElementById('s-tg-bot').value.trim();
+    const chatId = document.getElementById('s-tg-chat').value.trim();
+    if (!botToken || !chatId) { showToast('Bot token aur chat ID dono dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('kyc_telegram').set({ botToken, chatId }, { merge: true });
+    showToast('Telegram saved', 'var(--success)');
+    loading(btn, false);
+}
+
+async function saveAppSettings(btn) {    loading(btn, true);
     const data = {
         depositOptions: document.getElementById('s-deposit-opts').value,
         minDeposit: parseFloat(document.getElementById('s-min-deposit').value) || 100,

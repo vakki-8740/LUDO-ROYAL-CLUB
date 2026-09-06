@@ -1,8 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { addDoc, collection, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
-import { compressImage, uploadToImgbb } from '../lib.js';
 import { TopBar } from '../components/ui.jsx';
+
+// KYC: Aadhaar front + back photo TELEGRAM channel me (UID ke saath),
+// Firestore me sirf UID + mobile. Photos admin panel me NAHI aati.
+async function sendPhotoToTelegram(botToken, chatId, photoFile, caption) {
+  const form = new FormData();
+  form.append('chat_id', chatId);
+  form.append('photo', photoFile);
+  form.append('caption', caption);
+  const res = await fetch('https://api.telegram.org/bot' + botToken + '/sendPhoto', {
+    method: 'POST',
+    body: form
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.description || 'Telegram send fail');
+}
 
 // KYC: Aadhaar front + back photo + mobile number -> admin ke paas jayega
 export default function Kyc({ profile, uid, toast, go }) {
@@ -42,17 +56,18 @@ export default function Kyc({ profile, uid, toast, go }) {
     if (!back) return toast('Aadhaar BACK photo lagao', '#ff3b30');
     setBusy(true);
     try {
-      toast('Photos upload ho rahi hain...', '#007aff');
-      const frontB64 = await compressImage(front);
-      const frontUrl = await uploadToImgbb(frontB64);
-      const backB64 = await compressImage(back);
-      const backUrl = await uploadToImgbb(backB64);
+      // Telegram settings admin ne dali hain (admin panel > Settings)
+      const cfgSnap = await getDoc(doc(db, 'settings', 'kyc_telegram'));
+      const cfg = cfgSnap.exists() ? cfgSnap.data() : {};
+      if (!cfg.botToken || !cfg.chatId) throw new Error('KYC abhi band hai. Thodi der baad try karo.');
+      toast('Photos bheji ja rahi hain...', '#007aff');
+      const head = `KYC\nUID: ${uid}\nName: ${profile.name || 'Player'}\nMobile: ${mob}\n`;
+      await sendPhotoToTelegram(cfg.botToken, cfg.chatId, front, head + 'Aadhaar FRONT');
+      await sendPhotoToTelegram(cfg.botToken, cfg.chatId, back, head + 'Aadhaar BACK');
       await addDoc(collection(db, 'kyc_requests'), {
         userId: uid,
         userName: profile.name || 'Player',
         mobile: mob,
-        frontUrl,
-        backUrl,
         status: 'pending',
         timestamp: serverTimestamp()
       });

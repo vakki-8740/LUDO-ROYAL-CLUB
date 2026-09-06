@@ -113,8 +113,8 @@
                     <div class="header"><h1>KYC Requests</h1></div>
                     <div class="table-wrapper">
                         <table class="data-table">
-                            <thead><tr><th>User</th><th>Mobile</th><th>Front</th><th>Back</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody id="kyc-list"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+                            <thead><tr><th>User</th><th>UID</th><th>Mobile</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="kyc-list"><tr><td colspan="5" style="text-align:center;">Loading...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -209,6 +209,14 @@
                         <textarea id="s-about" placeholder="About Us Text" rows="4"></textarea>
                         <textarea id="s-rules" placeholder="Game Rules" rows="4"></textarea>
                         <button class="btn btn-success" onclick="saveAppSettings(this)"><span class="btn-text">Save Settings</span><div class="spinner"></div></button>
+                    </div>
+                    <div class="header" style="margin-top:40px;"><h1>KYC Telegram (Aadhaar photos yahan jayengi)</h1></div>
+                    <div class="form-card">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Bot Token (@BotFather se)</label>
+                        <input type="text" id="s-tg-bot" placeholder="123456:ABC-DEF...">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Channel Chat ID (bot ko admin banao)</label>
+                        <input type="text" id="s-tg-chat" placeholder="-1001234567890">
+                        <button class="btn btn-success" onclick="saveKycTelegram(this)"><span class="btn-text">Save Telegram</span><div class="spinner"></div></button>
                     </div>
                 </div>
 
