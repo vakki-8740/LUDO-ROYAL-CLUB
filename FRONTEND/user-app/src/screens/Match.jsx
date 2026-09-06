@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { addDoc, collection, doc, getDoc, getDocs, limit, query, runTransaction, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, query, runTransaction, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { compressPhoto, prizeFor, PLATFORM_FEE_PCT } from '../lib.js';
 import { TopBar } from '../components/ui.jsx';
@@ -131,6 +131,23 @@ export default function Match({ betId, bets, uid, toast, go }) {
     }
   }
 
+  // WIN PROOF cancel (dobara bhej sakte ho)
+  async function cancelProof() {
+    if (!claim || !claim.id) return;
+    if (!confirm('Win proof request cancel karein?')) return;
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, 'win_claims', claim.id), { status: 'cancelled' });
+      setClaim({ ...claim, status: 'cancelled' });
+      setProof(null);
+      toast('Proof request cancelled', '#ff9500');
+    } catch (e) {
+      toast('Error: ' + e.message, '#ff3b30');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Joiner: confirm dabao -> dono confirm to LIVE
   async function confirmJoin() {
     setBusy(true);
@@ -206,7 +223,7 @@ export default function Match({ betId, bets, uid, toast, go }) {
 
           {/* WIN PROOF: jeet ka 1 screenshot — Telegram + admin approve, phir payment */}
           <div className="dp-divider" style={{ marginTop: 18 }}><span>jeet gaye? proof bhejo</span></div>
-          {!claim || claim.status === 'rejected' ? (
+          {!claim || claim.status === 'rejected' || claim.status === 'cancelled' ? (
             <>
               {/* Preview NAHI — sirf selected tick + naam */}
               <label className="dp-btn" style={{ background: proof ? 'var(--success)' : 'var(--warning)', marginBottom: 10 }}>
@@ -226,9 +243,22 @@ export default function Match({ betId, bets, uid, toast, go }) {
                 <i className="fas fa-trophy"></i> {busy ? 'Bheja ja raha hai...' : 'Proof Bhejo'}
               </button>
             </>
+          ) : claim.status === 'approved' ? (
+            <div style={{ padding: 10, fontSize: 13, fontWeight: 700, color: 'var(--success)' }}>
+              Proof approved! Payment admin karega.
+            </div>
           ) : (
-            <div style={{ padding: 10, fontSize: 13, fontWeight: 700, color: claim.status === 'approved' ? 'var(--success)' : 'var(--warning)' }}>
-              {claim.status === 'approved' ? 'Proof approved! Payment admin karega.' : 'Proof bheja gaya — admin approve karega...'}
+            /* PENDING: approve hone tak loading + cancel (cancel ke baad dobara bhej sakte ho) */
+            <div style={{ textAlign: 'center', padding: 10 }}>
+              <span className="loader-dot" style={{ width: 22, height: 22 }}></span>
+              <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700 }}>
+                Proof bheja gaya — approve hone tak wait karo...
+              </div>
+              <div className="rc-share" style={{ marginTop: 10 }}>
+                <button className="dp-btn" style={{ background: 'var(--danger)' }} onClick={cancelProof} disabled={busy}>
+                  <i className="fas fa-times"></i> {busy ? 'Wait...' : 'Cancel'}
+                </button>
+              </div>
             </div>
           )}
         </div>
