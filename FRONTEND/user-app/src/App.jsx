@@ -15,7 +15,8 @@ import Kyc from './screens/Kyc.jsx';
 import Match from './screens/Match.jsx';
 import Profile from './screens/Profile.jsx';
 import Referral from './screens/Referral.jsx';
-import { Mail, Support } from './screens/MailSupport.jsx';
+import { Mail } from './screens/MailSupport.jsx';
+import { Support } from './screens/Support.jsx';
 import InfoPage from './screens/InfoPage.jsx';
 import './pagesContent.js';
 
@@ -229,7 +230,7 @@ export default function App() {
         )}
         {base === 'referral' && <Referral profile={profile} toast={toast} go={go} />}
         {base === 'mail' && <Mail uid={user.uid} go={go} toast={toast} />}
-        {base === 'support' && <Support go={go} />}
+        {base === 'support' && <Support go={go} profile={profile} />}
         {base === 'info' && <InfoPage type={param} go={go} />}
       </div>
 

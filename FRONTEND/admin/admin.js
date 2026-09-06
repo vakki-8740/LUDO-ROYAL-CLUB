@@ -622,10 +622,9 @@ async function saveWelcomeMsg(btn) {
 async function saveSupport(btn) {
     loading(btn, true);
     const data = {
-        whatsapp: document.getElementById('s-whatsapp').value.trim(),
+        email: document.getElementById('s-email').value.trim(),
         telegram: document.getElementById('s-telegram').value.trim(),
-        chat: document.getElementById('s-chat').value.trim(),
-        logo: document.getElementById('s-support-logo').value.trim()
+        chat: document.getElementById('s-chat').value.trim()
     };
     await db.collection('settings').doc('support').set(data, { merge: true });
     showToast('Support settings saved', 'var(--success)');
@@ -652,10 +651,9 @@ function loadSettings() {
     db.collection('settings').doc('support').get().then(d => {
         if (d.exists) {
             const s = d.data();
-            document.getElementById('s-whatsapp').value = s.whatsapp || '';
+            document.getElementById('s-email').value = s.email || '';
             document.getElementById('s-telegram').value = s.telegram || '';
             document.getElementById('s-chat').value = s.chat || '';
-            document.getElementById('s-support-logo').value = s.logo || '';
         }
     }).catch(() => {});
     // KYC Telegram (bot token + channel chat id)

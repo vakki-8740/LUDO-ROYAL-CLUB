@@ -186,10 +186,12 @@
                 <div id="support" class="section">
                     <div class="header"><h1>Support Page Settings</h1></div>
                     <div class="form-card">
-                        <input type="text" id="s-whatsapp" placeholder="WhatsApp Link">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Support Email ID</label>
+                        <input type="email" id="s-email" placeholder="support@example.com">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Telegram Link</label>
                         <input type="text" id="s-telegram" placeholder="Telegram Link">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Online Chat Page Link</label>
                         <input type="text" id="s-chat" placeholder="Chat Link">
-                        <input type="text" id="s-support-logo" placeholder="Support Logo URL">
                         <button class="btn btn-success" onclick="saveSupport(this)"><span class="btn-text">Save Support Settings</span><div class="spinner"></div></button>
                     </div>
                 </div>
