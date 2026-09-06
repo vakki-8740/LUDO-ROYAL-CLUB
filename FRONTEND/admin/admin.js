@@ -727,6 +727,10 @@ function loadSettings() {
     db.collection('settings').doc('razorpay').get().then(d => {
         if (d.exists) document.getElementById('s-rzp-key').value = d.data().keyId || '';
     }).catch(() => {});
+    // Payment server
+    db.collection('settings').doc('payment').get().then(d => {
+        if (d.exists) document.getElementById('s-pay-server').value = d.data().serverUrl || '';
+    }).catch(() => {});
     // KYC Telegram (bot token + channel chat id)
     db.collection('settings').doc('kyc_telegram').get().then(d => {
         if (d.exists) {
@@ -744,6 +748,16 @@ function loadSettings() {
 }
 
 // KYC Telegram: bot token + channel chat id (Aadhaar photos channel me jayengi)
+// Payment Server URL (QR + webhook wala PHP host)
+async function savePaymentServer(btn) {
+    loading(btn, true);
+    const serverUrl = document.getElementById('s-pay-server').value.trim().replace(/\/+$/, '');
+    if (!serverUrl) { showToast('Server URL dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('payment').set({ serverUrl }, { merge: true });
+    showToast('Payment server saved', 'var(--success)');
+    loading(btn, false);
+}
+
 // Razorpay Key ID (sirf Key ID — Secret kabhi app/admin me nahi)
 async function saveRazorpay(btn) {
     loading(btn, true);

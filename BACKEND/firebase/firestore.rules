@@ -62,8 +62,13 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && ((request.resource.data.type == 'Deposit' && request.resource.data.status in ['Success', 'Pending'])
          || (request.resource.data.type == 'Withdraw' && request.resource.data.status == 'Pending'));
-      // Approve / Reject / status change: sirf admin
-      allow update: if isAdmin();
+      // Approve / Reject / status change: sirf admin.
+      // Owner: apni PENDING deposit cancel kar sakta hai (timer khatam hone par).
+      allow update: if isAdmin() || (request.auth != null
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'Pending'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isAdmin();
     }
 
