@@ -28,6 +28,7 @@ export default function Kyc({ profile, uid, toast, go }) {
   const [backPrev, setBackPrev] = useState('');
     const [busy, setBusy] = useState(false);
   const [step, setStep] = useState('');
+  const [reqId, setReqId] = useState('');
   const [status, setStatus] = useState(profile.kycStatus || 'none');
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function Kyc({ profile, uid, toast, go }) {
         });
         if (!latest) return;
         setStatus(latest.status || 'pending');
+        if (latest.status === 'pending') setReqId(latestId);
         if (latest.status !== 'pending') return;
         const mails = await getDocs(query(
           collection(db, 'users', uid, 'mails'), where('kind', '==', 'kyc'), limit(10)
@@ -119,12 +121,28 @@ export default function Kyc({ profile, uid, toast, go }) {
         updateDoc(doc(db, 'users', uid), { kycStatus: 'pending' })
       ]);
       setStatus('pending');
+      setReqId(reqRef.id);
       toast('KYC submit ho gayi! Admin check karega.', '#34c759');
       setTimeout(() => go('profile'), 1500);
     } catch (e) {
       toast('Error: ' + e.message, '#ff3b30');
     } finally {
       setBusy(false);
+    }
+  }
+
+  // YAHIN cancel (Inbox Dekho ke paas) — inbox me bhi hai
+  async function cancelHere() {
+    if (!reqId) return;
+    if (!confirm('KYC request cancel karein?')) return;
+    try {
+      await updateDoc(doc(db, 'kyc_requests', reqId), { status: 'cancelled' });
+      await updateDoc(doc(db, 'users', uid), { kycStatus: 'none' });
+      setStatus('none');
+      setReqId('');
+      toast('KYC request cancelled', '#ff9500');
+    } catch (e) {
+      toast('Error: ' + e.message, '#ff3b30');
     }
   }
 
@@ -148,9 +166,14 @@ export default function Kyc({ profile, uid, toast, go }) {
           <span className="loader-dot"></span>
           <h3 style={{ marginTop: 10 }}>Request Processing...</h3>
           <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Tumhari KYC request bhej di gayi hai. Inbox me dekho ya cancel karo.</p>
-          <button className="dp-btn" style={{ background: 'var(--primary)', marginTop: 10 }} onClick={() => go('mail')}>
-            <i className="fas fa-envelope"></i> Inbox Dekho
-          </button>
+          <div className="rc-share" style={{ marginTop: 10 }}>
+            <button className="dp-btn" style={{ background: 'var(--primary)' }} onClick={() => go('mail')}>
+              <i className="fas fa-envelope"></i> Inbox Dekho
+            </button>
+            <button className="dp-btn" style={{ background: 'var(--danger)' }} onClick={cancelHere}>
+              <i className="fas fa-times"></i> Cancel
+            </button>
+          </div>
         </div>
       </div>
     );
