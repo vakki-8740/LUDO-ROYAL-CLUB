@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ludo Royal Club - Payment Server Status</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:#0a0a0b; color:#fff; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card { background:#1c1c1e; border-radius:20px; padding:32px 28px; max-width:440px; width:100%; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.5); }
+  h1 { font-size:22px; margin-bottom:6px; }
+  p.sub { color:#86868b; font-size:13px; margin-bottom:18px; }
+  .badge { display:inline-block; padding:8px 18px; border-radius:999px; font-size:14px; font-weight:700; margin-bottom:18px; }
+  .badge.ok { background:rgba(52,199,89,0.15); color:#34c759; }
+  .badge.bad { background:rgba(255,59,48,0.15); color:#ff3b30; }
+  .row { background:#2c2c2e; border-radius:12px; padding:12px 14px; margin-bottom:10px; text-align:left; font-size:13px; }
+  .row b { display:block; margin-bottom:4px; font-size:12px; color:#86868b; text-transform:uppercase; letter-spacing:0.5px; }
+  .pass { color:#34c759; font-weight:700; }
+  .fail { color:#ff3b30; font-weight:700; }
+  button { width:100%; padding:13px; border:none; border-radius:12px; background:#007aff; color:#fff; font-size:15px; font-weight:700; cursor:pointer; margin-top:6px; }
+  button:active { opacity:0.8; }
+  .time { margin-top:14px; font-size:11px; color:#636366; }
+  .hint { margin-top:12px; font-size:12px; color:#86868b; text-align:left; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Ludo Royal Club</h1>
+  <p class="sub">Payment Server (QR + Webhook)</p>
+  <div class="badge ok" id="main-badge">CHECKING...</div>
+
+  <div class="row"><b>PHP Files</b><span id="t-php">checking...</span></div>
+  <div class="row"><b>create-qr.php</b><span id="t-qr">checking...</span></div>
+  <div class="row"><b>webhook.php</b><span id="t-wh">checking...</span></div>
+
+  <button onclick="runCheck()">Recheck Status</button>
+  <div class="time" id="t-time"></div>
+  <div class="hint">
+    • config.php (secrets) yahan se check nahi hota — File Manager me dekho.<br>
+    • Webhook Razorpay dashboard me lagana mat bhoolna.<br>
+    • Admin panel > Payment Server me isi folder ka URL dalo.
+  </div>
+</div>
+
+<script>
+function set(id, txt, ok) {
+  document.getElementById(id).innerHTML =
+    '<span class="' + (ok === true ? 'pass' : ok === false ? 'fail' : '') + '">' + txt + '</span>';
+}
+async function runCheck() {
+  document.getElementById('t-time').textContent = 'Last check: ' + new Date().toLocaleString();
+  set('t-php', 'checking...', ''); set('t-qr', 'checking...', ''); set('t-wh', 'checking...', '');
+  let okCount = 0;
+
+  // create-qr.php GET par "POST only" JSON deta hai = PHP + file OK
+  try {
+    const r = await fetch('create-qr.php');
+    const j = await r.json();
+    if (j.error && j.error.includes('POST only')) { set('t-qr', 'OK (file live)', true); okCount++; }
+    else { set('t-qr', 'FAIL: ajeeb jawab', false); }
+  } catch (e) { set('t-qr', 'FAIL: file nahi mili', false); }
+
+  // webhook.php bina signature ke 400 JSON deta hai = file OK
+  try {
+    const r = await fetch('webhook.php', { method: 'POST', body: '{}' });
+    const j = await r.json();
+    if (j.error) { set('t-wh', 'OK (file live)', true); okCount++; }
+    else { set('t-wh', 'FAIL: ajeeb jawab', false); }
+  } catch (e) { set('t-wh', 'FAIL: file nahi mili', false); }
+
+  if (okCount === 2) { set('t-php', 'OK (PHP chal raha)', true); }
+  else { set('t-php', okCount === 1 ? 'HALF: 1 file missing' : 'FAIL', okCount === 1 ? '' : false); }
+
+  const b = document.getElementById('main-badge');
+  const allOk = okCount === 2;
+  b.textContent = allOk ? 'SERVER WORKING' : 'SERVER ME PROBLEM HAI';
+  b.className = 'badge ' + (allOk ? 'ok' : 'bad');
+}
+runCheck();
+</script>
+</body>
+</html>
