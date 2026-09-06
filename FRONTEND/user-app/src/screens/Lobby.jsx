@@ -23,16 +23,6 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
     );
   }, [bets, q]);
 
-  const openBets = filtered.filter((b) => b.status === 'waiting');
-  const playingBets = filtered.filter((b) => b.status === 'playing' || b.status === 'completed');
-  // Meri active matches (joined/playing jisme main hoon) — match page par le jao
-  const myMatches = bets.filter(
-    (b) =>
-      (b.status === 'joined' || b.status === 'playing') &&
-      (b.creatorId === uid || b.joinerId === uid)
-  );
-  const myWaiting = bets.filter((b) => b.status === 'waiting' && b.creatorId === uid);
-
   // Bet lagao: SIRF amount. Room code tab jab koi join karega (match page par).
   async function submitBet(amountStr) {
     const amount = parseFloat(amountStr);
@@ -140,72 +130,63 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
       </div>
 
       <div className="lobby-section-title">
-        <i className="fas fa-fire" style={{ color: 'var(--warning)' }}></i> Open Battles (Classic)
+        <i className="fas fa-fire" style={{ color: 'var(--warning)' }}></i> All Bets
       </div>
 
-      {/* Meri waiting bet: loading animation + cancel */}
-      {myWaiting.map((b) => (
-        <div className="bet-card-new waiting-pulse" key={b.id}>
-          <div className="open-bet-top">
-            <span className="open-bet-label">
-              <span className="loader-dot"></span> Opponent ka wait ho raha hai...
-            </span>
-            <span className="open-bet-amount">₹{b.amount || 0}</span>
-          </div>
-          <div className="open-bet-bottom">
-            <div className="open-bet-user">
-              <div className="open-bet-avatar"><img src={b.creatorLogo} alt="" /></div>
-              <div className="open-bet-name">{b.creatorName || 'Player'} (You)</div>
-            </div>
-            <button className="open-bet-play" style={{ background: 'var(--danger)' }} onClick={() => cancelBet(b)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ))}
-
-      {/* Meri active matches */}
-      {myMatches.length > 0 && (
-        <>
-          <div className="lobby-section-title">
-            <i className="fas fa-bolt" style={{ color: 'var(--success)' }}></i> My Matches
-          </div>
-          {myMatches.map((b) => {
-            const opp = b.creatorId === uid ? b.joinerName : b.creatorName;
-            return (
-              <div className="bet-card-new" key={b.id} onClick={() => go('match:' + b.id)} style={{ cursor: 'pointer' }}>
-                <div className="open-bet-top">
-                  <span className="open-bet-label">
-                    vs {opp || 'Player'} {b.status === 'joined' ? '• room code exchange' : '• LIVE'}
-                  </span>
-                  <span className="open-bet-amount">₹{b.amount || 0}</span>
-                </div>
-                <div className="open-bet-bottom">
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Match page kholo →</span>
-                  <button className="open-bet-play" onClick={() => go('match:' + b.id)}>Open</button>
-                </div>
-              </div>
-            );
-          })}
-        </>
-      )}
-
+      {/* SAB ek hi list me: meri bets + sabki bets */}
       <div id="open-bets-container">
-        {openBets.length ? (
-          openBets.map((b) => <OpenBetCard key={b.id} bet={b} onPlay={joinBet} myUid={uid} />)
+        {filtered.length ? (
+          filtered.map((b) => {
+            const mine = b.creatorId === uid || b.joinerId === uid;
+            // Meri waiting bet: loading + cancel
+            if (b.status === 'waiting' && b.creatorId === uid) {
+              return (
+                <div className="bet-card-new waiting-pulse" key={b.id}>
+                  <div className="open-bet-top">
+                    <span className="open-bet-label">
+                      <span className="loader-dot"></span> Opponent ka wait ho raha hai...
+                    </span>
+                    <span className="open-bet-amount">₹{b.amount || 0}</span>
+                  </div>
+                  <div className="open-bet-bottom">
+                    <div className="open-bet-user">
+                      <div className="open-bet-avatar"><img src={b.creatorLogo} alt="" /></div>
+                      <div className="open-bet-name">{b.creatorName || 'Player'} (You)</div>
+                    </div>
+                    <button className="open-bet-play" style={{ background: 'var(--danger)' }} onClick={() => cancelBet(b)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            // Meri active match (joined/playing): tap -> match page
+            if ((b.status === 'joined' || b.status === 'playing') && mine) {
+              const opp = b.creatorId === uid ? b.joinerName : b.creatorName;
+              return (
+                <div className="bet-card-new" key={b.id} onClick={() => go('match:' + b.id)} style={{ cursor: 'pointer' }}>
+                  <div className="open-bet-top">
+                    <span className="open-bet-label">
+                      vs {opp || 'Player'} (You) {b.status === 'joined' ? '• room code exchange' : '• LIVE'}
+                    </span>
+                    <span className="open-bet-amount">₹{b.amount || 0}</span>
+                  </div>
+                  <div className="open-bet-bottom">
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Match page kholo →</span>
+                    <button className="open-bet-play" onClick={() => go('match:' + b.id)}>Open</button>
+                  </div>
+                </div>
+              );
+            }
+            // Kisi aur ki open bet: Play
+            if (b.status === 'waiting') {
+              return <OpenBetCard key={b.id} bet={b} onPlay={joinBet} myUid={uid} />;
+            }
+            // Baaki (live/completed): display
+            return <PlayingBetCard key={b.id} bet={b} />;
+          })
         ) : (
-          <Empty text={q ? 'No open battles found' : 'No open battles'} />
-        )}
-      </div>
-
-      <div className="lobby-section-title">
-        <i className="fas fa-play-circle" style={{ color: 'var(--success)' }}></i> Currently Playing
-      </div>
-      <div id="playing-bets-container">
-        {playingBets.length ? (
-          playingBets.map((b) => <PlayingBetCard key={b.id} bet={b} />)
-        ) : (
-          <Empty text={q ? 'No active games found' : 'No active games'} />
+          <Empty text={q ? 'No bets found' : 'No bets yet'} />
         )}
       </div>
 
