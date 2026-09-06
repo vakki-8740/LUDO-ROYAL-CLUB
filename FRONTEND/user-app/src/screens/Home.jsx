@@ -13,7 +13,7 @@ export default function Home({ profile, go }) {
             <i className="fas fa-id-card"></i>
             <span>KYC Pending</span>
           </div>
-          <button className="kyc-complete-btn" onClick={() => go('wallet')}>Complete Here</button>
+          <button className="kyc-complete-btn" onClick={() => go('kyc')}>Complete Here</button>
         </div>
       )}
 

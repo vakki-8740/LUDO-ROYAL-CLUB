@@ -207,10 +207,15 @@ function showUserWallet(uid) {
         <div style="margin-bottom:15px;"><strong>Transaction History:</strong></div>
         <div style="max-height:200px;overflow-y:auto;" id="ud-trx-history">Loading...</div>
     `;
-    db.collection('transactions').where('userId', '==', uid).orderBy('timestamp', 'desc').limit(10).get()
+    db.collection('transactions').where('userId', '==', uid).limit(20).get()
         .then(snap => {
             const items = [];
             snap.forEach(d => items.push(d.data()));
+            items.sort((a, b) => {
+                const ta = a.timestamp && a.timestamp.toMillis ? a.timestamp.toMillis() : 0;
+                const tb = b.timestamp && b.timestamp.toMillis ? b.timestamp.toMillis() : 0;
+                return tb - ta;
+            });
             const el = document.getElementById('ud-trx-history');
             if (!items.length) { el.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No transactions</div>'; return; }
             el.innerHTML = items.map(t => `
@@ -363,12 +368,13 @@ function loadKYC() {
         const list = document.getElementById('kyc-list');
         const requests = [];
         snap.forEach(d => requests.push({ id: d.id, ...d.data() }));
-        if (!requests.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No KYC requests</td></tr>'; return; }
+        if (!requests.length) { list.innerHTML = '<tr><td colspan="6" style="text-align:center;">No KYC requests</td></tr>'; return; }
         list.innerHTML = requests.map(r => `
             <tr>
                 <td>${r.userName || r.userId || 'Unknown'}</td>
-                <td>${r.aadharName || '--'}</td>
-                <td>${r.aadharNumber || '--'}</td>
+                <td>${r.mobile || '--'}</td>
+                <td>${r.frontUrl ? `<a href="${r.frontUrl}" target="_blank"><img src="${r.frontUrl}" style="width:60px;height:40px;border-radius:6px;object-fit:cover;"></a>` : '--'}</td>
+                <td>${r.backUrl ? `<a href="${r.backUrl}" target="_blank"><img src="${r.backUrl}" style="width:60px;height:40px;border-radius:6px;object-fit:cover;"></a>` : '--'}</td>
                 <td><span style="color:${r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'}">${r.status || 'pending'}</span></td>
                 <td class="action-btns">
                     ${(!r.status || r.status === 'pending') ? `

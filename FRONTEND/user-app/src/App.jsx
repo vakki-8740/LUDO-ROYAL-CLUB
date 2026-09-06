@@ -10,6 +10,7 @@ import Wallet from './screens/Wallet.jsx';
 import Deposit from './screens/Deposit.jsx';
 import Withdraw from './screens/Withdraw.jsx';
 import History from './screens/History.jsx';
+import Kyc from './screens/Kyc.jsx';
 import Match from './screens/Match.jsx';
 import Profile from './screens/Profile.jsx';
 import Referral from './screens/Referral.jsx';
@@ -189,6 +190,7 @@ export default function App() {
         {base === 'deposit' && <Deposit profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'withdraw' && <Withdraw profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'history' && <History uid={user.uid} go={go} />}
+        {base === 'kyc' && <Kyc profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'match' && (
           <Match betId={param} bets={bets} uid={user.uid} toast={toast} go={go} />
         )}
@@ -232,6 +234,7 @@ export default function App() {
         <div className="sm-item" onClick={() => go('profile')}><i className="fas fa-user"></i> Profile</div>
         <div className="sm-item" onClick={() => go('referral')}><i className="fas fa-share-alt"></i> Referral</div>
         <div className="sm-item" onClick={() => go('mail')}><i className="fas fa-envelope"></i> Inbox</div>
+        <div className="sm-item" onClick={() => go('kyc')}><i className="fas fa-id-card"></i> KYC Verification</div>
         <div className="sm-item" onClick={() => go('support')}><i className="fas fa-headset"></i> Support Team</div>
         <div className="sm-divider"></div>
         <div className="sm-item" onClick={() => go('info:privacy')}><i className="fas fa-shield-alt"></i> Privacy Policy</div>

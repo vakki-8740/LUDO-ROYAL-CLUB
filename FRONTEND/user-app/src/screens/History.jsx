@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { HistoryItem, TopBar } from '../components/ui.jsx';
 
@@ -14,13 +14,16 @@ export default function History({ uid, go }) {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    getDocs(query(collection(db, 'transactions'), where('userId', '==', uid), orderBy('timestamp', 'desc'), limit(50)))
+    // NOTE: orderBy lagane par Firestore composite index maangta hai,
+    // isliye sort code me (nayi pehle)
+    getDocs(query(collection(db, 'transactions'), where('userId', '==', uid), limit(50)))
       .then((snap) => {
         const arr = [];
         snap.forEach((d) => {
           const t = d.data();
-          arr.push({ id: d.id, type: t.type || '', amount: t.amount || 0, status: t.status || '', date: t.date || '' });
+          arr.push({ id: d.id, type: t.type || '', amount: t.amount || 0, status: t.status || '', date: t.date || '', ts: t.timestamp && t.timestamp.toMillis ? t.timestamp.toMillis() : 0 });
         });
+        arr.sort((a, b) => b.ts - a.ts);
         setItems(arr);
       })
       .catch(() => {});
