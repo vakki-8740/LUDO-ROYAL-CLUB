@@ -36,10 +36,6 @@ async function ensureUserDoc(g) {
   if (snap.exists()) {
     const data = snap.data();
     if (data.status === 'blocked') throw new Error('Ye account blocked hai. Support se baat karo.');
-    if (!data.profileLogo && g.photoURL) {
-      await setDoc(ref, { profileLogo: g.photoURL }, { merge: true });
-      data.profileLogo = g.photoURL;
-    }
     return data;
   }
   let referredBy = '';
@@ -51,7 +47,8 @@ async function ensureUserDoc(g) {
     name: g.displayName || 'Player',
     email: g.email || '',
     photoURL: g.photoURL || '',
-    profileLogo: g.photoURL || randomLogo(),
+    // HAR naye user ko PROFILES-LOGO folder se RANDOM logo (Google photo nahi)
+    profileLogo: randomLogo(),
     userId: await unique5Digit('userId'),
     balance: 0,
     totalDeposit: 0,
