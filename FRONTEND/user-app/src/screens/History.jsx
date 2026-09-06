@@ -6,7 +6,9 @@ import { HistoryItem, TopBar } from '../components/ui.jsx';
 const TABS = [
   ['all', 'All'],
   ['Deposit', 'Deposits'],
-  ['Withdraw', 'Withdrawals']
+  ['Withdraw', 'Withdrawals'],
+  ['Win', 'Wins'],
+  ['Penalty', 'Loss']
 ];
 
 export default function History({ uid, go }) {

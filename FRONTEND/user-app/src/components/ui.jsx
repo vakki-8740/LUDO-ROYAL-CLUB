@@ -62,18 +62,19 @@ export function PlayingBetCard({ bet }) {
 }
 
 export function HistoryItem({ item }) {
-  const isDeposit = item.type === 'Deposit';
+  const isCredit = item.type === 'Deposit' || item.type === 'Win';
+  const icon = item.type === 'Win' ? 'fa-trophy' : isCredit ? 'fa-arrow-down' : 'fa-arrow-up';
   return (
     <div className="history-item">
       <div className="hi-left">
         <div
           className="hi-icon"
           style={{
-            background: isDeposit ? 'rgba(52,199,89,0.15)' : 'rgba(255,59,48,0.15)',
-            color: isDeposit ? 'var(--success)' : 'var(--danger)'
+            background: isCredit ? 'rgba(52,199,89,0.15)' : 'rgba(255,59,48,0.15)',
+            color: isCredit ? 'var(--success)' : 'var(--danger)'
           }}
         >
-          <i className={`fas ${isDeposit ? 'fa-arrow-down' : 'fa-arrow-up'}`}></i>
+          <i className={`fas ${icon}`}></i>
         </div>
         <div>
           <div className="hi-detail">{item.type}</div>
@@ -81,8 +82,8 @@ export function HistoryItem({ item }) {
         </div>
       </div>
       <div>
-        <div className="hi-amount" style={{ color: isDeposit ? 'var(--success)' : 'var(--danger)' }}>
-          {isDeposit ? '+' : '-'}₹{item.amount || 0}
+        <div className="hi-amount" style={{ color: isCredit ? 'var(--success)' : 'var(--danger)' }}>
+          {isCredit ? '+' : '-'}₹{item.amount || 0}
         </div>
         <div
           style={{
