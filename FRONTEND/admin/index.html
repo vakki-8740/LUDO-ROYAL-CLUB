@@ -224,6 +224,14 @@
                         <textarea id="s-rules" placeholder="Game Rules" rows="4"></textarea>
                         <button class="btn btn-success" onclick="saveAppSettings(this)"><span class="btn-text">Save Settings</span><div class="spinner"></div></button>
                     </div>
+                    <div class="header" style="margin-top:40px;"><h1>Manual Deposit (QR + UTR)</h1></div>
+                    <div class="form-card">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">QR Image URL</label>
+                        <input type="text" id="s-qr-url" placeholder="https://.../qr.png">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">UPI ID</label>
+                        <input type="text" id="s-upi-id" placeholder="name@upi">
+                        <button class="btn btn-success" onclick="saveDepositQr(this)"><span class="btn-text">Save QR</span><div class="spinner"></div></button>
+                    </div>
                     <div class="header" style="margin-top:40px;"><h1>PayU (online deposit)</h1></div>
                     <div class="form-card">
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Test Key</label>

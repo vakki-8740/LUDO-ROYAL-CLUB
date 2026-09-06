@@ -8,7 +8,7 @@ import Splash from './screens/Splash.jsx';
 import Home from './screens/Home.jsx';
 import Lobby from './screens/Lobby.jsx';
 import Wallet from './screens/Wallet.jsx';
-import Deposit from './screens/Deposit.jsx';
+import Deposit, { PayQr } from './screens/Deposit.jsx';
 import Withdraw from './screens/Withdraw.jsx';
 import History from './screens/History.jsx';
 import PaymentSuccess from './screens/PaymentSuccess.jsx';
@@ -224,6 +224,7 @@ export default function App() {
         {base === 'lobby' && <Lobby bets={bets} profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'wallet' && <Wallet profile={profile} go={go} />}
         {base === 'deposit' && <Deposit profile={profile} uid={user.uid} toast={toast} go={go} />}
+        {base === 'payqr' && <PayQr amount={param} profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'withdraw' && <Withdraw profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'history' && <History uid={user.uid} go={go} />}
         {base === 'success' && <PaymentSuccess txnId={param} toast={toast} go={go} />}

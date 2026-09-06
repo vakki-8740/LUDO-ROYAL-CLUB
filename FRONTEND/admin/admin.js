@@ -723,6 +723,13 @@ function loadSettings() {
             document.getElementById('s-chat').value = s.chat || '';
         }
     }).catch(() => {});
+    // Deposit QR
+    db.collection('settings').doc('deposit_qr').get().then(d => {
+        if (d.exists) {
+            document.getElementById('s-qr-url').value = d.data().qrUrl || '';
+            document.getElementById('s-upi-id').value = d.data().upiId || '';
+        }
+    }).catch(() => {});
     // PayU keys (display)
     db.collection('settings').doc('payu').get().then(d => {
         if (d.exists) {
@@ -783,6 +790,17 @@ async function savePaymentServer(btn) {
     if (!serverUrl) { showToast('Server URL dalo', 'var(--danger)'); loading(btn, false); return; }
     await db.collection('settings').doc('payment').set({ serverUrl }, { merge: true });
     showToast('Payment server saved', 'var(--success)');
+    loading(btn, false);
+}
+
+// Manual Deposit QR + UPI ID (user QR scan karke UTR bhejta hai)
+async function saveDepositQr(btn) {
+    loading(btn, true);
+    const qrUrl = document.getElementById('s-qr-url').value.trim();
+    const upiId = document.getElementById('s-upi-id').value.trim();
+    if (!qrUrl && !upiId) { showToast('QR URL ya UPI ID dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('deposit_qr').set({ qrUrl, upiId }, { merge: true });
+    showToast('Deposit QR saved', 'var(--success)');
     loading(btn, false);
 }
 
