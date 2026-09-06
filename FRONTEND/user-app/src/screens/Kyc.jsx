@@ -50,6 +50,11 @@ export default function Kyc({ profile, uid, toast, go }) {
   }
 
   async function submit() {
+    // KYC EK BAAR: pending/approved request hai to dobara nahi
+    if (status === 'pending' || status === 'approved') {
+      toast('Tumhari KYC request pehle se hai', '#ff9500');
+      return;
+    }
     const mob = mobile.replace(/\D/g, '');
     if (mob.length !== 10) return toast('Sahi 10-digit mobile number dalo', '#ff3b30');
     if (!front) return toast('Aadhaar FRONT photo lagao', '#ff3b30');
@@ -64,11 +69,21 @@ export default function Kyc({ profile, uid, toast, go }) {
       const head = `KYC\nUID: ${uid}\nName: ${profile.name || 'Player'}\nMobile: ${mob}\n`;
       await sendPhotoToTelegram(cfg.botToken, cfg.chatId, front, head + 'Aadhaar FRONT');
       await sendPhotoToTelegram(cfg.botToken, cfg.chatId, back, head + 'Aadhaar BACK');
-      await addDoc(collection(db, 'kyc_requests'), {
+      const reqRef = await addDoc(collection(db, 'kyc_requests'), {
         userId: uid,
         userName: profile.name || 'Player',
         mobile: mob,
         status: 'pending',
+        timestamp: serverTimestamp()
+      });
+      // Inbox (notification) me KYC request ka mail — yahin se view + cancel hoga
+      await addDoc(collection(db, 'users', uid, 'mails'), {
+        subject: 'KYC Request Sent 📝',
+        body: 'Tumhari KYC request bhej di gayi hai. Neeche View dabakar dekho, Cancel dabakar wapas lo.',
+        from: 'Admin',
+        read: false,
+        kind: 'kyc',
+        refId: reqRef.id,
         timestamp: serverTimestamp()
       });
       await updateDoc(doc(db, 'users', uid), { kycStatus: 'pending' });
@@ -100,8 +115,11 @@ export default function Kyc({ profile, uid, toast, go }) {
         <TopBar title="KYC" onBack={() => go('profile')} />
         <div className="deposit-page-card" style={{ textAlign: 'center' }}>
           <span className="loader-dot"></span>
-          <h3 style={{ marginTop: 10 }}>KYC Pending hai</h3>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Admin check kar raha hai, thoda wait karo.</p>
+          <h3 style={{ marginTop: 10 }}>Request Processing...</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Tumhari KYC request bhej di gayi hai. Inbox me dekho ya cancel karo.</p>
+          <button className="dp-btn" style={{ background: 'var(--primary)', marginTop: 10 }} onClick={() => go('mail')}>
+            <i className="fas fa-envelope"></i> Inbox Dekho
+          </button>
         </div>
       </div>
     );

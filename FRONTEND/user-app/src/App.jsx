@@ -208,7 +208,7 @@ export default function App() {
           />
         )}
         {base === 'referral' && <Referral profile={profile} toast={toast} go={go} />}
-        {base === 'mail' && <Mail uid={user.uid} go={go} />}
+        {base === 'mail' && <Mail uid={user.uid} go={go} toast={toast} />}
         {base === 'support' && <Support go={go} />}
         {base === 'info' && <InfoPage type={param} go={go} />}
       </div>

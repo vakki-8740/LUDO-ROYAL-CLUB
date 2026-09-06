@@ -66,7 +66,12 @@ service cloud.firestore {
     // ---------- KYC ----------
     match /kyc_requests/{reqId} {
       allow read, create: if request.auth != null;
-      allow update: if isAdmin();
+      // Admin: approve/reject. Owner: sirf apni PENDING request cancel.
+      allow update: if isAdmin() || (request.auth != null
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
     }
 
     // ---------- GAMES ----------
