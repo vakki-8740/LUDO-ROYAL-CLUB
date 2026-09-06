@@ -14,15 +14,15 @@ export function todayStr() {
 }
 
 export const RANDOM_LOGOS = [
-  'USERS-LOGO/photo_2026-09-02_16-25-41.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-05.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-06.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-07.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-23.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-24.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-26.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-27.jpg',
-  'USERS-LOGO/photo_2026-09-02_16-26-29.jpg'
+  'PROFILES-LOGO/photo_2026-09-02_16-25-41.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-05.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-06.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-07.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-23.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-24.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-26.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-27.jpg',
+  'PROFILES-LOGO/photo_2026-09-02_16-26-29.jpg'
 ];
 
 export function randomLogo() {
