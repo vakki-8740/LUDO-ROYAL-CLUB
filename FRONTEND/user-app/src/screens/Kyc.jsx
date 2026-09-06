@@ -31,15 +31,35 @@ export default function Kyc({ profile, uid, toast, go }) {
   const [status, setStatus] = useState(profile.kycStatus || 'none');
 
   useEffect(() => {
+    // Latest request + purani request ke liye inbox mail backfill
+    // (purani KYC me mail banta hi nahi tha)
     getDocs(query(collection(db, 'kyc_requests'), where('userId', '==', uid), limit(5)))
-      .then((snap) => {
-        let latest = null, latestTs = -1;
+      .then(async (snap) => {
+        let latest = null, latestId = '', latestTs = -1;
         snap.forEach((d) => {
           const t = d.data().timestamp;
           const ms = t && t.toMillis ? t.toMillis() : 0;
-          if (ms >= latestTs) { latestTs = ms; latest = d.data(); }
+          if (ms >= latestTs) { latestTs = ms; latest = d.data(); latestId = d.id; }
         });
-        if (latest) setStatus(latest.status || 'pending');
+        if (!latest) return;
+        setStatus(latest.status || 'pending');
+        if (latest.status !== 'pending') return;
+        const mails = await getDocs(query(
+          collection(db, 'users', uid, 'mails'), where('kind', '==', 'kyc'), limit(10)
+        ));
+        let has = false;
+        mails.forEach((m) => { if (m.data().refId === latestId) has = true; });
+        if (!has) {
+          await addDoc(collection(db, 'users', uid, 'mails'), {
+            subject: 'KYC Request Sent 📝',
+            body: 'Tumhari KYC request bhej di gayi hai. Neeche View dabakar dekho, Cancel dabakar wapas lo.',
+            from: 'Admin',
+            read: false,
+            kind: 'kyc',
+            refId: latestId,
+            timestamp: serverTimestamp()
+          });
+        }
       })
       .catch(() => {});
   }, [uid]);
