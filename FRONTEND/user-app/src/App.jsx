@@ -10,6 +10,7 @@ import Wallet from './screens/Wallet.jsx';
 import Deposit from './screens/Deposit.jsx';
 import Withdraw from './screens/Withdraw.jsx';
 import History from './screens/History.jsx';
+import Match from './screens/Match.jsx';
 import Profile from './screens/Profile.jsx';
 import Referral from './screens/Referral.jsx';
 import { Mail, Support } from './screens/MailSupport.jsx';
@@ -76,6 +77,7 @@ export default function App() {
   const [menu, setMenu] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
   const toastTimer = useRef(null);
+  const autoNavRef = useRef('');
 
   const toast = useCallback((msg, bg) => {
     setToastMsg({ msg, bg: bg || 'rgba(28,28,30,0.95)' });
@@ -135,6 +137,24 @@ export default function App() {
     return unsub;
   }, [user]);
 
+  // AUTO-OPEN match page:
+  // - Creator: meri waiting bet par koi aaya (joined) -> match page
+  // - Joiner: maine join kiya aur room code aa gaya -> match page
+  useEffect(() => {
+    if (!user || !bets.length) return;
+    const mine = bets.find(
+      (b) =>
+        b.status === 'joined' &&
+        (b.creatorId === user.uid || b.joinerId === user.uid) &&
+        (b.creatorId === user.uid || b.roomCode)
+    );
+    if (mine && autoNavRef.current !== mine.id) {
+      autoNavRef.current = mine.id;
+      setScreen('match:' + mine.id);
+      setMenu(false);
+    }
+  }, [bets, user]);
+
   if (!user || !profile) {
     return (
       <>
@@ -169,6 +189,9 @@ export default function App() {
         {base === 'deposit' && <Deposit profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'withdraw' && <Withdraw profile={profile} uid={user.uid} toast={toast} go={go} />}
         {base === 'history' && <History uid={user.uid} go={go} />}
+        {base === 'match' && (
+          <Match betId={param} bets={bets} uid={user.uid} toast={toast} go={go} />
+        )}
         {base === 'profile' && (
           <Profile
             profile={profile}

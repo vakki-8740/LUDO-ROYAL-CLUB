@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { addDoc, collection, doc, increment, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, increment, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { randomLogo } from '../lib.js';
 import { Empty, OpenBetCard, PlayingBetCard, TopBar } from '../components/ui.jsx';
@@ -25,12 +25,18 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
 
   const openBets = filtered.filter((b) => b.status === 'waiting');
   const playingBets = filtered.filter((b) => b.status === 'playing' || b.status === 'completed');
+  // Meri active matches (joined/playing jisme main hoon) — match page par le jao
+  const myMatches = allBets.filter(
+    (b) =>
+      (b.status === 'joined' || b.status === 'playing') &&
+      (b.creatorId === uid || b.joinerId === uid)
+  );
+  const myWaiting = allBets.filter((b) => b.status === 'waiting' && b.creatorId === uid);
 
-  async function submitBet(amountStr, room) {
+  // Bet lagao: SIRF amount. Room code tab jab koi join karega (match page par).
+  async function submitBet(amountStr) {
     const amount = parseFloat(amountStr);
-    const roomCode = (room || '').trim().toUpperCase();
     if (!amount || amount <= 0) return toast('Enter valid amount', '#ff3b30');
-    if (!roomCode) return toast('Enter room code', '#ff3b30');
     if ((profile.balance || 0) <= 0) return toast('Add money to wallet first!', '#ff9500');
     if ((profile.balance || 0) < amount) return toast('Insufficient balance!', '#ff3b30');
     setBusy(true);
@@ -41,14 +47,17 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
         creatorName: profile.name || 'Player',
         creatorLogo: profile.profileLogo || randomLogo(),
         amount,
-        roomCode,
+        roomCode: '',
         status: 'waiting',
         joinerId: '',
         joinerName: '',
         joinerLogo: '',
+        creatorConfirmed: false,
+        joinerConfirmed: false,
+        matchedAt: null,
         timestamp: serverTimestamp()
       });
-      toast('Bet created! Waiting for opponent...', '#34c759');
+      toast('Bet lag gayi! Opponent ka wait karo...', '#34c759');
       setShowCreate(false);
       go('lobby');
     } catch (e) {
@@ -58,13 +67,29 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
     }
   }
 
+  // Apni waiting bet cancel (paisa wapas)
+  async function cancelBet(bet) {
+    if (!confirm('Bet cancel karein? Paisa wapas milega.')) return;
+    setBusy(true);
+    try {
+      await deleteDoc(doc(db, 'bets', bet.id));
+      await updateDoc(doc(db, 'users', uid), { balance: increment(bet.amount || 0) });
+      toast('Bet cancelled, paisa wapas!', '#34c759');
+    } catch (e) {
+      toast('Error: ' + e.message, '#ff3b30');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Play dabao: match page khulega (room code creator bhejega)
   async function joinBet(bet) {
     const amount = parseFloat(bet.amount);
     if (!amount || amount <= 0) return toast('Invalid bet amount!', '#ff3b30');
     if ((profile.balance || 0) < amount) return toast('Insufficient balance!', '#ff3b30');
     setBusy(true);
     try {
-      const roomCode = await runTransaction(db, async (tx) => {
+      await runTransaction(db, async (tx) => {
         const bSnap = await tx.get(doc(db, 'bets', bet.id));
         if (!bSnap.exists()) throw new Error('Bet not found');
         const d = bSnap.data();
@@ -74,17 +99,14 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
         if ((uSnap.data().balance || 0) < d.amount) throw new Error('Insufficient balance!');
         tx.update(doc(db, 'users', uid), { balance: increment(-d.amount) });
         tx.update(doc(db, 'bets', bet.id), {
-          status: 'playing',
+          status: 'joined',
           joinerId: uid,
           joinerName: profile.name || 'Player',
-          joinerLogo: profile.profileLogo || randomLogo()
+          joinerLogo: profile.profileLogo || randomLogo(),
+          matchedAt: serverTimestamp()
         });
-        return d.roomCode;
       });
-      toast(`Room Code: ${roomCode} (copied!)`, '#007aff');
-      try {
-        await navigator.clipboard.writeText(roomCode);
-      } catch (e) {}
+      go('match:' + bet.id);
     } catch (e) {
       toast('Error: ' + e.message, '#ff3b30');
     } finally {
@@ -120,6 +142,54 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
       <div className="lobby-section-title">
         <i className="fas fa-fire" style={{ color: 'var(--warning)' }}></i> Open Battles (Classic)
       </div>
+
+      {/* Meri waiting bet: loading animation + cancel */}
+      {myWaiting.map((b) => (
+        <div className="bet-card-new waiting-pulse" key={b.id}>
+          <div className="open-bet-top">
+            <span className="open-bet-label">
+              <span className="loader-dot"></span> Opponent ka wait ho raha hai...
+            </span>
+            <span className="open-bet-amount">₹{b.amount || 0}</span>
+          </div>
+          <div className="open-bet-bottom">
+            <div className="open-bet-user">
+              <div className="open-bet-avatar"><img src={b.creatorLogo} alt="" /></div>
+              <div className="open-bet-name">{b.creatorName || 'Player'} (You)</div>
+            </div>
+            <button className="open-bet-play" style={{ background: 'var(--danger)' }} onClick={() => cancelBet(b)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* Meri active matches */}
+      {myMatches.length > 0 && (
+        <>
+          <div className="lobby-section-title">
+            <i className="fas fa-bolt" style={{ color: 'var(--success)' }}></i> My Matches
+          </div>
+          {myMatches.map((b) => {
+            const opp = b.creatorId === uid ? b.joinerName : b.creatorName;
+            return (
+              <div className="bet-card-new" key={b.id} onClick={() => go('match:' + b.id)} style={{ cursor: 'pointer' }}>
+                <div className="open-bet-top">
+                  <span className="open-bet-label">
+                    vs {opp || 'Player'} {b.status === 'joined' ? '• room code exchange' : '• LIVE'}
+                  </span>
+                  <span className="open-bet-amount">₹{b.amount || 0}</span>
+                </div>
+                <div className="open-bet-bottom">
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Match page kholo →</span>
+                  <button className="open-bet-play" onClick={() => go('match:' + b.id)}>Open</button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
       <div id="open-bets-container">
         {openBets.length ? (
           openBets.map((b) => <OpenBetCard key={b.id} bet={b} onPlay={joinBet} myUid={uid} />)

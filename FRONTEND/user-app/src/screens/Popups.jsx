@@ -53,14 +53,15 @@ export function RulesPopup({ onClose }) {
 
 export function CreateBetPopup({ onClose, onSubmit }) {
   const [amount, setAmount] = useState('');
-  const [room, setRoom] = useState('');
   return (
     <div id="create-bet-overlay" className="popup-overlay" style={{ display: 'flex' }} onClick={onClose}>
       <div className="popup" onClick={(e) => e.stopPropagation()}>
         <div className="popup-header">Create Bet</div>
         <input type="number" placeholder="Enter Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input type="text" placeholder="Enter Room Code" value={room} onChange={(e) => setRoom(e.target.value)} />
-        <button className="btn" onClick={() => onSubmit(amount, room)}>Submit</button>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Room code match ke time par dalna hai (koi join kare tab)
+        </p>
+        <button className="btn" onClick={() => onSubmit(amount)}>Submit</button>
         <button className="btn" style={{ background: 'var(--text-muted)', marginTop: 10 }} onClick={onClose}>
           Cancel
         </button>

@@ -455,3 +455,8 @@ button, .btn { -webkit-tap-highlight-color:transparent; }
     .wsc-info strong { font-size:14px; }
 }
 
+
+/* ========== MATCH FLOW (waiting pulse + loader dot) ========== */
+.waiting-pulse { border:1.5px solid var(--warning); animation:pulseBorder 1.6s ease-in-out infinite; }
+@keyframes pulseBorder { 0%,100% { box-shadow:0 0 0 0 rgba(255,149,0,0.35); } 50% { box-shadow:0 0 0 8px rgba(255,149,0,0); } }
+.loader-dot { display:inline-block; width:14px; height:14px; border-radius:50%; border:3px solid rgba(255,149,0,0.3); border-top:3px solid var(--warning); animation:spin 1s linear infinite; vertical-align:-2px; margin-right:6px; }
