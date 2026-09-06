@@ -36,7 +36,7 @@ export default function Home({ profile, go }) {
         {[0, 1].map((i) => (
           <div className="game-card" key={i} onClick={() => go('lobby')}>
             <div className="game-image">
-              <img src="./logo.png" alt="Classic Ludo" />
+              <img src="./IMAGES/B-IMAGE.jpg" alt="Classic Ludo" />
             </div>
             <div className="game-name">Classic Ludo</div>
           </div>

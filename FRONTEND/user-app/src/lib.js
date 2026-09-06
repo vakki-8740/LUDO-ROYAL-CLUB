@@ -28,6 +28,3 @@ export const RANDOM_LOGOS = [
 export function randomLogo() {
   return RANDOM_LOGOS[Math.floor(Math.random() * RANDOM_LOGOS.length)];
 }
-
-// NOTE: ye images purane HTML app ke hain. Jab React deploy hoga to
-// public/ me copy karna (abhi logo.png hai). Tab tak random Google photo use hoti hai.

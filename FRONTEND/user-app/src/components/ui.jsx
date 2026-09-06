@@ -46,6 +46,7 @@ export function PlayingBetCard({ bet }) {
           <div className="bet-user-name">{bet.creatorName || 'Player'}</div>
         </div>
         <div className="bet-vs-center">
+          <img src="./icons/VS ICON/photo_2026-09-02_16-29-08-removebg-preview.png" alt="VS" className="bet-vs-img" />
           <div className="bet-amount-green">+₹{bet.amount || 0}</div>
         </div>
         <div className="bet-user">
