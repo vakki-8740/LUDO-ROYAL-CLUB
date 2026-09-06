@@ -119,7 +119,13 @@ export default function App() {
         setUser(g);
         setProfile({ ...data });
       } catch (e) {
-        toast(e.message, '#ff3b30');
+        const msg = (e && e.message) || 'Login failed';
+        toast(
+          msg.includes('permission') || msg.includes('PERMISSION')
+            ? 'Database permission error: Firestore Rules publish karo.'
+            : msg,
+          '#ff3b30'
+        );
         try {
           await auth.signOut();
         } catch (err) {}
