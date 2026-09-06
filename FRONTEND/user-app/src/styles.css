@@ -460,3 +460,15 @@ button, .btn { -webkit-tap-highlight-color:transparent; }
 .waiting-pulse { border:1.5px solid var(--warning); animation:pulseBorder 1.6s ease-in-out infinite; }
 @keyframes pulseBorder { 0%,100% { box-shadow:0 0 0 0 rgba(255,149,0,0.35); } 50% { box-shadow:0 0 0 8px rgba(255,149,0,0); } }
 .loader-dot { display:inline-block; width:14px; height:14px; border-radius:50%; border:3px solid rgba(255,149,0,0.3); border-top:3px solid var(--warning); animation:spin 1s linear infinite; vertical-align:-2px; margin-right:6px; }
+
+/* ========== SPLASH (opening logo animation) ========== */
+.splash-screen { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+.splash-logo { width:120px; height:120px; border-radius:30px; object-fit:cover; box-shadow:0 8px 30px rgba(0,0,0,0.35); animation:splashPop 1.4s ease-in-out infinite; }
+@keyframes splashPop { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
+.splash-title { color:#fff; font-size:28px; font-weight:800; animation:splashFade 1.4s ease-in-out infinite; }
+@keyframes splashFade { 0%,100% { opacity:1; } 50% { opacity:0.75; } }
+.splash-loader { display:flex; gap:8px; }
+.splash-loader span { width:10px; height:10px; border-radius:50%; background:#fff; animation:splashBlink 1.2s infinite; }
+.splash-loader span:nth-child(2) { animation-delay:0.2s; }
+.splash-loader span:nth-child(3) { animation-delay:0.4s; }
+@keyframes splashBlink { 0%,100% { opacity:0.3; transform:translateY(0); } 50% { opacity:1; transform:translateY(-6px); } }

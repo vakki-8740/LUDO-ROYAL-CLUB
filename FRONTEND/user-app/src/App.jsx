@@ -4,6 +4,7 @@ import { addDoc, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, q
 import { auth, db } from './firebase.js';
 import { generateUserId, randomLogo } from './lib.js';
 import Login from './screens/Login.jsx';
+import Splash from './screens/Splash.jsx';
 import Home from './screens/Home.jsx';
 import Lobby from './screens/Lobby.jsx';
 import Wallet from './screens/Wallet.jsx';
@@ -63,18 +64,21 @@ async function ensureUserDoc(g) {
     createdAt: serverTimestamp()
   };
   await setDoc(ref, data);
-  let msg = 'Welcome ' + data.name + '! Start playing and winning real money. Good luck!';
-  try {
-    const w = await getDoc(doc(db, 'settings', 'welcome'));
-    if (w.exists() && w.data().message) msg = w.data().message;
-  } catch (e) {}
-  await addDoc(collection(db, 'users', g.uid, 'mails'), {
-    subject: 'Welcome to Ludo Royal Club! 🎉',
-    body: msg,
-    from: 'Admin',
-    read: false,
-    timestamp: serverTimestamp()
-  });
+  // Welcome mail background me (login wait nahi karega — fast entry)
+  (async () => {
+    try {
+      let msg = 'Welcome ' + data.name + '! Start playing and winning real money. Good luck!';
+      const w = await getDoc(doc(db, 'settings', 'welcome'));
+      if (w.exists() && w.data().message) msg = w.data().message;
+      await addDoc(collection(db, 'users', g.uid, 'mails'), {
+        subject: 'Welcome to Ludo Royal Club! 🎉',
+        body: msg,
+        from: 'Admin',
+        read: false,
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {}
+  })();
   return data;
 }
 
@@ -83,6 +87,7 @@ const NAV_INDEX = { home: 0, lobby: 1, wallet: 2, profile: 3 };
 export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false); // splash jab tak session pata na chale
   const [screen, setScreen] = useState('home');
   const [bets, setBets] = useState([]);
   const [menu, setMenu] = useState(false);
@@ -102,9 +107,10 @@ export default function App() {
     document.getElementById('main-content')?.scrollTo(0, 0);
   }, []);
 
-  // Auth + profile
+  // Auth + profile (fast: pehle callback par splash hatao)
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (g) => {
+      setAuthChecked(true);
       if (!g) {
         setUser(null);
         setProfile(null);
@@ -165,6 +171,10 @@ export default function App() {
       setMenu(false);
     }
   }, [bets, user]);
+
+  if (!authChecked) {
+    return <Splash />;
+  }
 
   if (!user || !profile) {
     return (
