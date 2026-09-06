@@ -45,6 +45,7 @@
                 <div class="nav-item" onclick="switchTab('users', this)"><i class="fas fa-users"></i> Users</div>
                 <div class="nav-item" onclick="switchTab('kyc', this)"><i class="fas fa-id-card"></i> KYC</div>
                 <div class="nav-item" onclick="switchTab('bets', this)"><i class="fas fa-coins"></i> Bets</div>
+                <div class="nav-item" onclick="switchTab('winclaims', this)"><i class="fas fa-trophy"></i> Win Claims</div>
                 <div class="nav-item" onclick="switchTab('transactions', this)"><i class="fas fa-wallet"></i> Transactions</div>
                 <div class="nav-item" onclick="switchTab('referrals', this)"><i class="fas fa-share-alt"></i> Referrals</div>
                 <div class="nav-item" onclick="switchTab('mail', this)"><i class="fas fa-envelope"></i> Mail</div>
@@ -126,6 +127,17 @@
                         <table class="data-table">
                             <thead><tr><th>Creator</th><th>Joiner</th><th>Amount</th><th>Room Code</th><th>Status</th></tr></thead>
                             <tbody id="bets-list"><tr><td colspan="5" style="text-align:center;">Loading...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- WIN CLAIMS (jeet ka screenshot proof — photo Telegram me, yahan approve) -->
+                <div id="winclaims" class="section">
+                    <div class="header"><h1>Win Claims</h1></div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr><th>User</th><th>Bet</th><th>Prize</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="winclaims-list"><tr><td colspan="5" style="text-align:center;">Loading...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -219,6 +231,14 @@
                         <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Channel Chat ID (bot ko admin banao)</label>
                         <input type="text" id="s-tg-chat" placeholder="-1001234567890">
                         <button class="btn btn-success" onclick="saveKycTelegram(this)"><span class="btn-text">Save Telegram</span><div class="spinner"></div></button>
+                    </div>
+                    <div class="header" style="margin-top:40px;"><h1>Win Proof Telegram (jeet ke screenshot yahan jayenge)</h1></div>
+                    <div class="form-card">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Bot Token (alag bot banao)</label>
+                        <input type="text" id="s-win-bot" placeholder="123456:ABC-DEF...">
+                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted); margin-bottom:5px; display:block;">Channel Chat ID (bot ko admin banao)</label>
+                        <input type="text" id="s-win-chat" placeholder="-1001234567890">
+                        <button class="btn btn-success" onclick="saveWinTelegram(this)"><span class="btn-text">Save Telegram</span><div class="spinner"></div></button>
                     </div>
                 </div>
 

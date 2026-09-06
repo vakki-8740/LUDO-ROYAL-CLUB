@@ -77,6 +77,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
     }
 
+    // ---------- WIN CLAIMS (jeet ka screenshot proof) ----------
+    // User: 1 photo Telegram + yahan request. Admin: approve (prize) / reject.
+    match /win_claims/{claimId} {
+      allow read, create: if request.auth != null;
+      allow update: if isAdmin();
+    }
+
     // ---------- GAMES ----------
     match /games/{gameId} {
       allow read: if request.auth != null;

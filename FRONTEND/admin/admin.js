@@ -117,6 +117,7 @@ function loadAllData() {
     loadUsers();
     loadTransactions();
     loadBets();
+    loadWinClaims();
     loadGames();
     loadSettings();
     loadKYC();
@@ -464,14 +465,66 @@ function renderBets() {
 // Platform fee 5%: 100+100=200 pot -> winner ko 190. (Payout admin khud dekhta hai.)
 async function settleBet(betId, winnerUid) {
     const bet = allBets.find(b => b.id === betId);
-    if (!bet || bet.status !== 'playing') return;
+    if (!bet || bet.status !== 'playing') return 0;
     const prize = Math.floor((bet.amount || 0) * 2 * 0.95);
     await db.collection('bets').doc(betId).update({ status: 'completed', winnerId: winnerUid });
     await db.collection('users').doc(winnerUid).update({
         balance: firebase.firestore.FieldValue.increment(prize),
         totalWin: firebase.firestore.FieldValue.increment(prize)
     });
-    showToast('Bet settled! Winner got ₹' + prize, 'var(--success)');
+    return prize;
+}
+
+// ==================== WIN CLAIMS (screenshot proof) ====================
+// Photo Telegram channel me jati hai (UID ke saath). Yahan sirf approve/reject.
+// Approve -> bet completed + winner ko prize. Phir payment admin khud karega.
+function loadWinClaims() {
+    track(db.collection('win_claims').orderBy('timestamp', 'desc').limit(200).onSnapshot(snap => {
+        const list = document.getElementById('winclaims-list');
+        const claims = [];
+        snap.forEach(d => claims.push({ id: d.id, ...d.data() }));
+        if (!claims.length) { list.innerHTML = '<tr><td colspan="5" style="text-align:center;">No win claims</td></tr>'; return; }
+        list.innerHTML = claims.map(c => {
+            const prize = Math.floor((c.betAmount || 0) * 2 * 0.95);
+            return `
+            <tr>
+                <td>${c.userName || 'Unknown'}<br><small style="color:var(--text-muted);">${c.userId || ''}</small></td>
+                <td>₹${c.betAmount || 0} (${c.betId || '--'})</td>
+                <td>₹${prize}</td>
+                <td><span style="color:${c.status === 'approved' ? 'var(--success)' : c.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'}">${c.status || 'pending'}</span></td>
+                <td class="action-btns">
+                    ${(!c.status || c.status === 'pending') ? `
+                        <button class="btn btn-success" style="padding:6px 12px;font-size:12px;" onclick="approveWinClaim('${c.id}')">Approve</button>
+                        <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="rejectWinClaim('${c.id}')">Reject</button>
+                    ` : '<span style="color:var(--text-muted);font-size:12px;">--</span>'}
+                </td>
+            </tr>`;
+        }).join('');
+    }));
+}
+
+async function approveWinClaim(claimId) {
+    try {
+        const d = await db.collection('win_claims').doc(claimId).get();
+        if (!d.exists) return;
+        const c = d.data();
+        if (c.status && c.status !== 'pending') { showToast('Pehle se decided hai', '#ff9500'); return; }
+        const prize = await settleBet(c.betId, c.userId);
+        await db.collection('win_claims').doc(claimId).update({ status: 'approved', prize });
+        await db.collection('transactions').add({
+            userId: c.userId, userName: c.userName || '',
+            type: 'Win', amount: prize, status: 'Success', date: todayStr(),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Approved! Winner ko ₹' + prize + ' mila. Payment kar do.', 'var(--success)');
+    } catch (e) {
+        showToast('Error: ' + e.message, 'var(--danger)');
+    }
+}
+
+async function rejectWinClaim(claimId) {
+    await db.collection('win_claims').doc(claimId).update({ status: 'rejected' });
+    showToast('Win claim rejected', 'var(--danger)');
 }
 
 // ==================== GAMES ====================
@@ -664,6 +717,13 @@ function loadSettings() {
             document.getElementById('s-tg-chat').value = d.data().chatId || '';
         }
     }).catch(() => {});
+    // Win proof Telegram (alag bot + channel)
+    db.collection('settings').doc('win_telegram').get().then(d => {
+        if (d.exists) {
+            document.getElementById('s-win-bot').value = d.data().botToken || '';
+            document.getElementById('s-win-chat').value = d.data().chatId || '';
+        }
+    }).catch(() => {});
 }
 
 // KYC Telegram: bot token + channel chat id (Aadhaar photos channel me jayengi)
@@ -673,6 +733,17 @@ async function saveKycTelegram(btn) {
     const chatId = document.getElementById('s-tg-chat').value.trim();
     if (!botToken || !chatId) { showToast('Bot token aur chat ID dono dalo', 'var(--danger)'); loading(btn, false); return; }
     await db.collection('settings').doc('kyc_telegram').set({ botToken, chatId }, { merge: true });
+    showToast('Telegram saved', 'var(--success)');
+    loading(btn, false);
+}
+
+// Win Proof Telegram: alag bot token + channel chat id (jeet ke screenshot yahan jayenge)
+async function saveWinTelegram(btn) {
+    loading(btn, true);
+    const botToken = document.getElementById('s-win-bot').value.trim();
+    const chatId = document.getElementById('s-win-chat').value.trim();
+    if (!botToken || !chatId) { showToast('Bot token aur chat ID dono dalo', 'var(--danger)'); loading(btn, false); return; }
+    await db.collection('settings').doc('win_telegram').set({ botToken, chatId }, { merge: true });
     showToast('Telegram saved', 'var(--success)');
     loading(btn, false);
 }
