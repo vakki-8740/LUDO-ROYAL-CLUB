@@ -29,6 +29,15 @@ export function randomLogo() {
   return RANDOM_LOGOS[Math.floor(Math.random() * RANDOM_LOGOS.length)];
 }
 
+// Platform fee: jeet me se 5% platform rakhta hai.
+// 100+100=200 pot -> winner ko 190. (Payout/cut admin khud dekhta hai,
+// ye sirf display + admin settle ke hisaab ke liye.)
+export const PLATFORM_FEE_PCT = 5;
+
+export function prizeFor(betAmount) {
+  return Math.floor((betAmount || 0) * 2 * (1 - PLATFORM_FEE_PCT / 100));
+}
+
 // Photo halki karo (Telegram fast jayegi) -> JPEG Blob
 export function compressPhoto(file, maxSize = 1280) {
   return new Promise((resolve, reject) => {

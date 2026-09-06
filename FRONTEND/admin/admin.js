@@ -461,10 +461,11 @@ function renderBets() {
 }
 
 // Result set karo (winner ka paisa + win total). Loser ka paisa pehle hi kat chuka hai.
+// Platform fee 5%: 100+100=200 pot -> winner ko 190. (Payout admin khud dekhta hai.)
 async function settleBet(betId, winnerUid) {
     const bet = allBets.find(b => b.id === betId);
     if (!bet || bet.status !== 'playing') return;
-    const prize = (bet.amount || 0) * 2;
+    const prize = Math.floor((bet.amount || 0) * 2 * 0.95);
     await db.collection('bets').doc(betId).update({ status: 'completed', winnerId: winnerUid });
     await db.collection('users').doc(winnerUid).update({
         balance: firebase.firestore.FieldValue.increment(prize),

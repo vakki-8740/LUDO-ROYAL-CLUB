@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase.js';
+import { prizeFor, PLATFORM_FEE_PCT } from '../lib.js';
 import { TopBar } from '../components/ui.jsx';
 
 function fmtTime(ts) {
@@ -123,6 +124,10 @@ export default function Match({ betId, bets, uid, toast, go }) {
       {live ? (
         <div className="deposit-page-card" style={{ textAlign: 'center' }}>
           <div className="dp-label">User vs User match shuru! Game me jao aur khelo 🍀</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+            Jeetne wale ko: <strong style={{ color: 'var(--success)', fontSize: 16 }}>₹{prizeFor(bet.amount)}</strong>
+            <br />({PLATFORM_FEE_PCT}% platform fee cut ke baad)
+          </div>
           {bet.roomCode && (
             <div className="rc-code" style={{ color: 'var(--text)' }}>
               {bet.roomCode}
