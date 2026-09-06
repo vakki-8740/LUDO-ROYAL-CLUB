@@ -28,3 +28,24 @@ export const RANDOM_LOGOS = [
 export function randomLogo() {
   return RANDOM_LOGOS[Math.floor(Math.random() * RANDOM_LOGOS.length)];
 }
+
+// Photo halki karo (Telegram fast jayegi) -> JPEG Blob
+export function compressPhoto(file, maxSize = 1280) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      const scale = Math.min(1, maxSize / Math.max(width, height));
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      c.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Photo compress fail'))), 'image/jpeg', 0.8);
+    };
+    img.onerror = () => reject(new Error('Photo padhi nahi gayi'));
+    img.src = URL.createObjectURL(file);
+  });
+}

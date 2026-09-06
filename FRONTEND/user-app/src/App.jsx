@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 import { generateUserId, randomLogo } from './lib.js';
 import Login from './screens/Login.jsx';
@@ -17,6 +17,16 @@ import Referral from './screens/Referral.jsx';
 import { Mail, Support } from './screens/MailSupport.jsx';
 import InfoPage from './screens/InfoPage.jsx';
 import './pagesContent.js';
+
+// Login par HAR user ko ALAG 5-digit random UID (takrao check ke saath)
+async function unique5Digit(field) {
+  for (let i = 0; i < 20; i++) {
+    const v = generateUserId();
+    const snap = await getDocs(query(collection(db, 'users'), where(field, '==', v), limit(1)));
+    if (snap.empty) return v;
+  }
+  return generateUserId() + String(Date.now()).slice(-2);
+}
 
 async function ensureUserDoc(g) {
   const ref = doc(db, 'users', g.uid);
@@ -40,13 +50,13 @@ async function ensureUserDoc(g) {
     email: g.email || '',
     photoURL: g.photoURL || '',
     profileLogo: g.photoURL || randomLogo(),
-    userId: generateUserId(),
+    userId: await unique5Digit('userId'),
     balance: 0,
     totalDeposit: 0,
     totalWithdraw: 0,
     totalWin: 0,
     status: 'active',
-    referralCode: generateUserId(),
+    referralCode: await unique5Digit('referralCode'),
     referredBy,
     referralCommission: 0,
     kycStatus: 'none',
