@@ -26,12 +26,12 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
   const openBets = filtered.filter((b) => b.status === 'waiting');
   const playingBets = filtered.filter((b) => b.status === 'playing' || b.status === 'completed');
   // Meri active matches (joined/playing jisme main hoon) — match page par le jao
-  const myMatches = allBets.filter(
+  const myMatches = bets.filter(
     (b) =>
       (b.status === 'joined' || b.status === 'playing') &&
       (b.creatorId === uid || b.joinerId === uid)
   );
-  const myWaiting = allBets.filter((b) => b.status === 'waiting' && b.creatorId === uid);
+  const myWaiting = bets.filter((b) => b.status === 'waiting' && b.creatorId === uid);
 
   // Bet lagao: SIRF amount. Room code tab jab koi join karega (match page par).
   async function submitBet(amountStr) {
