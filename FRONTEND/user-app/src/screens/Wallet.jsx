@@ -1,6 +1,11 @@
 import React from 'react';
 import { TopBar } from '../components/ui.jsx';
 
+// WIN = Balance me se Deposit hatakar jo EXTRA — wahi jeet
+export function winAmount(p) {
+  return Math.max(0, (p.balance || 0) - (p.totalDeposit || 0));
+}
+
 export default function Wallet({ profile, go }) {
   return (
     <div id="wallet-section" className="section active">
@@ -40,7 +45,7 @@ export default function Wallet({ profile, go }) {
           <div className="wsc-icon orange"><i className="fas fa-trophy"></i></div>
           <div className="wsc-info">
             <span>Winnings</span>
-            <strong>₹<span>{profile.totalWin || 0}</span></strong>
+            <strong>₹<span>{winAmount(profile)}</span></strong>
           </div>
         </div>
       </div>

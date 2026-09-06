@@ -17,8 +17,10 @@ service cloud.firestore {
     }
 
     // ---------- USERS ----------
+    // Read: koi bhi login user (referral list + lobby ke liye naam chahiye).
+    // Write: sirf apna wallet counters/naam, baaki sirf admin.
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if request.auth != null;
       allow create: if isOwner(uid);
       // User: sirf ye fields (deposit/withdraw/bets balance yahin se update hota hai).
       // NOTE: backend nahi hai isliye client-side counters; gadbad dikhe to admin console se thik karo.
@@ -26,8 +28,9 @@ service cloud.firestore {
         .affectedKeys().hasOnly(['name', 'profileLogo', 'photoURL', 'balance', 'totalDeposit', 'totalWithdraw', 'totalWin']));
 
       match /mails/{mailId} {
+        // FIX: welcome/KYC mail app khud banata hai (owner create), warna login fail hota tha
         allow read, update: if isOwner(uid) || isAdmin();
-        allow create: if isAdmin();
+        allow create: if isOwner(uid) || isAdmin();
       }
     }
 

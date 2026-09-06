@@ -136,7 +136,7 @@
                         <h1>Transactions</h1>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <input type="text" id="search-trx" placeholder="Search..." onkeyup="filterTrx()" style="max-width:200px; margin:0;">
-                            <select id="filter-trx-type" onchange="filterTrx()" style="padding:10px; border-radius:10px; border:1px solid #ddd; margin:0; max-width:150px;"><option value="">All Types</option><option value="Deposit">Deposit</option><option value="Withdraw">Withdraw</option></select>
+                            <select id="filter-trx-type" onchange="filterTrx()" style="padding:10px; border-radius:10px; border:1px solid #ddd; margin:0; max-width:150px;"><option value="">All Types</option><option value="Deposit">Deposit</option><option value="Withdraw">Withdraw</option><option value="Win">Win/Bonus</option><option value="Penalty">Penalty</option></select>
                             <select id="filter-trx-status" onchange="filterTrx()" style="padding:10px; border-radius:10px; border:1px solid #ddd; margin:0; max-width:150px;"><option value="">All Status</option><option value="Pending">Pending</option><option value="Success">Success</option><option value="Rejected">Rejected</option></select>
                         </div>
                     </div>
@@ -250,15 +250,21 @@
         </div>
     </div>
 
-    <!-- Edit Balance Modal -->
+    <!-- Edit Balance Modal: Add / Deduct / Set — admin kitna bhi amount de/ghata sakta hai -->
     <div id="edit-balance-modal" class="modal-overlay" onclick="closeModal(event, 'edit-balance-modal')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <h2 style="margin-bottom:15px; font-weight:800;">Edit User Balance</h2>
             <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">User: <strong id="edit-u-name">...</strong></p>
             <input type="hidden" id="edit-u-id">
-            <input type="number" id="edit-u-bal" placeholder="New Balance">
-            <button class="btn btn-success" style="width:100%;" onclick="saveBalance(this)">
-                <span class="btn-text">Update Balance</span><div class="spinner"></div>
+            <input type="number" id="edit-u-bal" placeholder="Amount">
+            <button class="btn btn-success" style="width:100%;margin-bottom:8px;" onclick="saveBalance(this,'add')">
+                <span class="btn-text"><i class="fas fa-plus"></i> Add Amount</span><div class="spinner"></div>
+            </button>
+            <button class="btn btn-warning" style="width:100%;margin-bottom:8px;" onclick="saveBalance(this,'deduct')">
+                <span class="btn-text"><i class="fas fa-minus"></i> Deduct Amount</span><div class="spinner"></div>
+            </button>
+            <button class="btn" style="width:100%;background:var(--text-muted);" onclick="saveBalance(this,'set')">
+                <span class="btn-text">Set Balance</span><div class="spinner"></div>
             </button>
         </div>
     </div>

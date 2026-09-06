@@ -103,13 +103,17 @@ if (window.FirebaseReady) {
 function logout() {
     unsubs.forEach(u => { try { u(); } catch (e) {} });
     unsubs = [];
+    dataLoaded = false;
     firebase.auth().signOut().catch(() => {});
     document.getElementById('login-section').style.display = 'flex';
     document.getElementById('admin-layout').style.display = 'none';
 }
 
 // ==================== LOAD DATA (realtime) ====================
+let dataLoaded = false;
 function loadAllData() {
+    if (dataLoaded) return; // double-subscribe se bacho (session restore + login)
+    dataLoaded = true;
     loadUsers();
     loadTransactions();
     loadBets();
@@ -193,7 +197,7 @@ function showUserProfile(uid) {
         <div style="margin-bottom:15px;"><strong>KYC:</strong> ${user.kycStatus || 'none'}</div>
         <div style="margin-bottom:15px;"><strong>Total Deposit:</strong> ₹${user.totalDeposit || 0}</div>
         <div style="margin-bottom:15px;"><strong>Total Withdraw:</strong> ₹${user.totalWithdraw || 0}</div>
-        <div style="margin-bottom:15px;"><strong>Total Win:</strong> ₹${user.totalWin || 0}</div>
+        <div style="margin-bottom:15px;"><strong>Total Win (Balance − Deposit):</strong> ₹${Math.max(0, (user.balance || 0) - (user.totalDeposit || 0))}</div>
     `;
 }
 
@@ -252,15 +256,51 @@ function openBalanceModal(uid) {
     document.getElementById('edit-balance-modal').style.display = 'flex';
 }
 
-async function saveBalance(btn) {
+async function saveBalance(btn, mode) {
     loading(btn, true);
     const uid = document.getElementById('edit-u-id').value;
-    const bal = parseFloat(document.getElementById('edit-u-bal').value);
-    if (isNaN(bal) || bal < 0) { showToast('Invalid balance', 'var(--danger)'); loading(btn, false); return; }
-    await db.collection('users').doc(uid).update({ balance: bal });
-    showToast('Balance updated', 'var(--success)');
+    const amt = parseFloat(document.getElementById('edit-u-bal').value);
+    if (isNaN(amt) || amt < 0) { showToast('Sahi amount dalo', 'var(--danger)'); loading(btn, false); return; }
+    try {
+        const ref = db.collection('users').doc(uid);
+        if (mode === 'add') {
+            // Admin bonus: balance + win dono badhe (win = balance - deposit)
+            await ref.update({
+                balance: firebase.firestore.FieldValue.increment(amt),
+                totalWin: firebase.firestore.FieldValue.increment(amt)
+            });
+            await db.collection('transactions').add({
+                userId: uid, userName: (allUsers.find(u => u.id === uid) || {}).name || '',
+                type: 'Win', amount: amt, status: 'Success', date: todayStr(),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showToast('₹' + amt + ' add ho gaya', 'var(--success)');
+        } else if (mode === 'deduct') {
+            await db.runTransaction(async (tx) => {
+                const u = await tx.get(ref);
+                const bal = Math.max(0, ((u.exists ? u.data().balance : 0) || 0) - amt);
+                tx.update(ref, { balance: bal });
+            });
+            await db.collection('transactions').add({
+                userId: uid, userName: (allUsers.find(u => u.id === uid) || {}).name || '',
+                type: 'Penalty', amount: amt, status: 'Success', date: todayStr(),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showToast('₹' + amt + ' deduct ho gaya', 'var(--warning)');
+        } else {
+            await ref.update({ balance: amt });
+            showToast('Balance set ho gaya', 'var(--success)');
+        }
+    } catch (e) {
+        showToast('Error: ' + e.message, 'var(--danger)');
+    }
     document.getElementById('edit-balance-modal').style.display = 'none';
     loading(btn, false);
+}
+
+function todayStr() {
+    const d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
 }
 
 // ==================== TRANSACTIONS ====================

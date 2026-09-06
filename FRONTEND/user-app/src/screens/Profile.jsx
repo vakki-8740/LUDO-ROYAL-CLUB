@@ -2,6 +2,7 @@ import React from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { TopBar } from '../components/ui.jsx';
+import { winAmount } from './Wallet.jsx';
 import { logoutAll } from './Login.jsx';
 
 export default function Profile({ profile, uid, toast, go, onLogout }) {
@@ -55,7 +56,7 @@ export default function Profile({ profile, uid, toast, go, onLogout }) {
         <div className="p-stat">
           <div className="p-stat-icon orange"><i className="fas fa-trophy"></i></div>
           <span className="p-stat-label">Win</span>
-          <strong>₹{profile.totalWin || 0}</strong>
+          <strong>₹{winAmount(profile)}</strong>
         </div>
       </div>
 
