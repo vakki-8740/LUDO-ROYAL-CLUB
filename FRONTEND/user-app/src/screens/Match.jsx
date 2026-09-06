@@ -104,11 +104,11 @@ export default function Match({ betId, bets, uid, toast, go }) {
       if (!cfg.botToken || !cfg.chatId) throw new Error('Win proof abhi band hai. Thodi der baad try karo.');
       const small = await compressPhoto(proof);
       const caption =
-        '🏆✨ WIN PROOF ✨🏆\n' +
-        '🆔 UID:\n"' + uid + '"\n\n' +
-        '🎯 Bet ID:\n"' + bet.id + '"\n\n' +
-        '💰 Bet Amount: ₹' + (bet.amount || 0) + '\n' +
-        '🏅 Prize Won: ₹' + prizeFor(bet.amount) + '\n\n' +
+        '🏆✨ WIN PROOF ✨🏆\n\n' +
+        '🆔 UID:\n\n' + uid + '\n\n' +
+        '🎯 Bet ID:\n\n' + bet.id + '\n\n' +
+        '💰 Bet Amount: ₹' + (bet.amount || 0) + '\n\n' +
+        '🏅 Prize Won: ₹' + prizeFor(bet.amount) + '\n' +
         '━━━━━━━━━━━━━━━━━━\n' +
         '🎉 CONGRATULATIONS! 🎉\n' +
         '━━━━━━━━━━━━━━━━━━';
