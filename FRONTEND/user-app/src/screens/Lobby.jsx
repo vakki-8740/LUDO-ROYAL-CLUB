@@ -209,10 +209,6 @@ export default function Lobby({ bets, profile, uid, toast, go }) {
         )}
       </div>
 
-      <button className="refresh-btn" onClick={() => toast('Bets refreshed!', '#34c759')}>
-        <i className="fas fa-sync-alt"></i> Load More Bets
-      </button>
-
       {showCreate && <CreateBetPopup onClose={() => setShowCreate(false)} onSubmit={submitBet} />}
     </div>
   );
