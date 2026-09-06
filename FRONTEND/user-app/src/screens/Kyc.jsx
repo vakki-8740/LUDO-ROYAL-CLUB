@@ -24,8 +24,6 @@ export default function Kyc({ profile, uid, toast, go }) {
   const [mobile, setMobile] = useState('');
   const [front, setFront] = useState(null);
   const [back, setBack] = useState(null);
-  const [frontPrev, setFrontPrev] = useState('');
-  const [backPrev, setBackPrev] = useState('');
     const [busy, setBusy] = useState(false);
   const [step, setStep] = useState('');
   const [reqId, setReqId] = useState('');
@@ -66,12 +64,13 @@ export default function Kyc({ profile, uid, toast, go }) {
       .catch(() => {});
   }, [uid]);
 
-  function pick(setFile, setPrev, e) {
+  function pick(setFile, e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
     setFile(f);
-    setPrev(URL.createObjectURL(f));
   }
+
+  // Selected badge (photo preview NAHI dikhegi — sirf tick + naam)
 
   async function submit() {
     // KYC EK BAAR: pending/approved request hai to dobara nahi
@@ -187,18 +186,16 @@ export default function Kyc({ profile, uid, toast, go }) {
         <div className="wp-field"><i className="fas fa-phone"></i><input type="tel" placeholder="10-digit mobile number" value={mobile} onChange={(e) => setMobile(e.target.value)} /></div>
 
         <div className="dp-label"><i className="fas fa-id-card" style={{ color: 'var(--primary)' }}></i> Aadhaar FRONT Photo</div>
-        <label className="dp-btn" style={{ background: 'var(--primary)', marginBottom: 10 }}>
-          <i className="fas fa-camera"></i> {frontPrev ? 'Badlo' : 'Photo Lagao'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => pick(setFront, setFrontPrev, e)} />
+        <label className="dp-btn" style={{ background: front ? 'var(--success)' : 'var(--primary)', marginBottom: 10 }}>
+          <i className={`fas ${front ? 'fa-check-circle' : 'fa-camera'}`}></i> {front ? `Selected: ${front.name}` : 'Photo Lagao'}
+          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => pick(setFront, e)} />
         </label>
-        {frontPrev && <img src={frontPrev} alt="front" style={{ width: '100%', borderRadius: 12, marginBottom: 14 }} />}
 
         <div className="dp-label"><i className="fas fa-id-card" style={{ color: 'var(--primary)' }}></i> Aadhaar BACK Photo</div>
-        <label className="dp-btn" style={{ background: 'var(--primary)', marginBottom: 10 }}>
-          <i className="fas fa-camera"></i> {backPrev ? 'Badlo' : 'Photo Lagao'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => pick(setBack, setBackPrev, e)} />
+        <label className="dp-btn" style={{ background: back ? 'var(--success)' : 'var(--primary)', marginBottom: 10 }}>
+          <i className={`fas ${back ? 'fa-check-circle' : 'fa-camera'}`}></i> {back ? `Selected: ${back.name}` : 'Photo Lagao'}
+          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => pick(setBack, e)} />
         </label>
-        {backPrev && <img src={backPrev} alt="back" style={{ width: '100%', borderRadius: 12, marginBottom: 14 }} />}
 
         <button className="dp-btn" onClick={submit} disabled={busy}>
           <i className="fas fa-paper-plane"></i> {busy ? 'Submit ho raha hai...' : 'Submit KYC'}

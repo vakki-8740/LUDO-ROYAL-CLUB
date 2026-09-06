@@ -30,7 +30,6 @@ export default function Match({ betId, bets, uid, toast, go }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [proof, setProof] = useState(null);
-  const [proofPrev, setProofPrev] = useState('');
   const [claim, setClaim] = useState(null); // meri is match ki claim
 
   const bet = bets.find((b) => b.id === betId);
@@ -116,7 +115,6 @@ export default function Match({ betId, bets, uid, toast, go }) {
       });
       setClaim({ id: ref.id, status: 'pending' });
       setProof(null);
-      setProofPrev('');
       toast('Proof bheja gaya! Approve hote hi payment milega.', '#34c759');
     } catch (e) {
       toast('Error: ' + e.message, '#ff3b30');
@@ -202,8 +200,9 @@ export default function Match({ betId, bets, uid, toast, go }) {
           <div className="dp-divider" style={{ marginTop: 18 }}><span>jeet gaye? proof bhejo</span></div>
           {!claim || claim.status === 'rejected' ? (
             <>
-              <label className="dp-btn" style={{ background: 'var(--warning)', marginBottom: 10 }}>
-                <i className="fas fa-camera"></i> {proofPrev ? 'Photo Badlo' : 'Win Screenshot Lagao'}
+              {/* Preview NAHI — sirf selected tick + naam */}
+              <label className="dp-btn" style={{ background: proof ? 'var(--success)' : 'var(--warning)', marginBottom: 10 }}>
+                <i className={`fas ${proof ? 'fa-check-circle' : 'fa-camera'}`}></i> {proof ? `Selected: ${proof.name}` : 'Win Screenshot Lagao'}
                 <input
                   type="file"
                   accept="image/*"
@@ -212,11 +211,9 @@ export default function Match({ betId, bets, uid, toast, go }) {
                     const f = e.target.files && e.target.files[0];
                     if (!f) return;
                     setProof(f);
-                    setProofPrev(URL.createObjectURL(f));
                   }}
                 />
               </label>
-              {proofPrev && <img src={proofPrev} alt="proof" style={{ width: '100%', borderRadius: 12, marginBottom: 10 }} />}
               <button className="dp-btn" onClick={sendWinProof} disabled={busy || !proof}>
                 <i className="fas fa-trophy"></i> {busy ? 'Bheja ja raha hai...' : 'Proof Bhejo'}
               </button>
