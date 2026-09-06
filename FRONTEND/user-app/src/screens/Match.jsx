@@ -103,7 +103,15 @@ export default function Match({ betId, bets, uid, toast, go }) {
       const cfg = cfgSnap.exists() ? cfgSnap.data() : {};
       if (!cfg.botToken || !cfg.chatId) throw new Error('Win proof abhi band hai. Thodi der baad try karo.');
       const small = await compressPhoto(proof);
-      const caption = `WIN PROOF\nUID: ${uid}\nBet: ${bet.id} (₹${bet.amount || 0})\nPrize: ₹${prizeFor(bet.amount)}`;
+      const caption =
+        '🏆✨ WIN PROOF ✨🏆\n' +
+        '🆔 UID:\n"' + uid + '"\n\n' +
+        '🎯 Bet ID:\n"' + bet.id + '"\n\n' +
+        '💰 Bet Amount: ₹' + (bet.amount || 0) + '\n' +
+        '🏅 Prize Won: ₹' + prizeFor(bet.amount) + '\n\n' +
+        '━━━━━━━━━━━━━━━━━━\n' +
+        '🎉 CONGRATULATIONS! 🎉\n' +
+        '━━━━━━━━━━━━━━━━━━';
       await sendProofToTelegram(cfg.botToken, cfg.chatId, small, caption);
       const ref = await addDoc(collection(db, 'win_claims'), {
         betId: bet.id,
